@@ -52,7 +52,7 @@ int <- int_smr %>%
                           atm_pres = pres_hpa),
          Salinity = if_else(sal_ppt == 35, "Saltwater", "Freshwater"))
 
-#calculate alpha value at smr
+#calculate alpha value at smr, in progress
 
 
 # Alpha closed ------------------------------------------------------------
@@ -109,7 +109,7 @@ print(ttest)
 
 # avg_alpha_int is statistically different than avg_alpha_closed
 # mean difference 4.48
-# we should use the alpha values from the intermittent experiment
+# therefore we should use the alpha values from the intermittent experiment
 
 
 # Multiple regression model -----------------------------------------------
@@ -118,13 +118,15 @@ print(ttest)
 salinitylm <- lm(formula = alpha_diff_avg ~ salinity, data = alpha_values_combined)
 summary(salinitylm)
 
+# effect of temp
 templm <- lm(formula = alpha_diff_avg ~ temp_avg, data = alpha_values_combined)
 summary(templm)
 
-
+# additive effect of salinity and temp
 mlm <- lm(formula = alpha_diff_avg ~ salinity + temp_avg, data = alpha_values_combined)
 summary(mlm)
 
+# interactive effect of salinity and temp
 mlm_interact <- lm(formula = alpha_diff_avg ~ salinity + temp_avg + salinity:temp_avg, data = alpha_values_combined)
 summary(mlm_interact)
 
