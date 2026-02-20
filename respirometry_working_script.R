@@ -9,6 +9,7 @@ library(stats)
 
 
 # Alpha Int ---------------------------------------------------------------
+
 # This section will calculate the avg of the 3 highest alpha values  from the intermittent experiment for each fish
 alpha_int <- read.csv("alpha_int.csv")
 
@@ -56,6 +57,7 @@ int <- int_smr %>%
 
 
 # Alpha closed ------------------------------------------------------------
+
 # read in closed alpha values
 # This section will calculate the avg of the 3 highest alpha values from the closed experiment for each fish
 # There not all fish have a closed experiment because some died during the intermittent experiment
@@ -101,11 +103,15 @@ alpha_values_combined <- alpha_values_combined %>%
          temp_avg = ((temp_closed + temp_int)/2)) %>% 
   select(-c(temp_int,temp_closed))
 
+
+########
+  
 # run paired sample t-test, with avg alpha_int and avg_alpha_closed
 # this will tell us if the two values are different, essentially calculates the difference between them
-ttest <- alpha_values_combined %>% 
-  with(t.test(avg_alpha_int, avg_alpha_closed, paired = TRUE, na.action = na.omit))
-print(ttest)
+
+#ttest <- alpha_values_combined %>% 
+#  with(t.test(avg_alpha_int, avg_alpha_closed, paired = TRUE, na.action = na.omit))
+#print(ttest)
 
 # avg_alpha_int is statistically different than avg_alpha_closed
 # mean difference 4.48
@@ -113,22 +119,94 @@ print(ttest)
 
 
 # Multiple regression model -----------------------------------------------
+
 # These are linear regression models to evaluate which variables are related to a change in alpha 
 # first is the effect of salinity
-salinitylm <- lm(formula = alpha_diff_avg ~ salinity, data = alpha_values_combined)
-summary(salinitylm)
+lm1 <- lm(formula = alpha_diff_avg ~ salinity, data = alpha_values_combined)
+summary(lm1)
 
 # effect of temp
-templm <- lm(formula = alpha_diff_avg ~ temp_avg, data = alpha_values_combined)
-summary(templm)
+lm2 <- lm(formula = alpha_diff_avg ~ temp_avg, data = alpha_values_combined)
+summary(lm2)
 
 # additive effect of salinity and temp
-mlm <- lm(formula = alpha_diff_avg ~ salinity + temp_avg, data = alpha_values_combined)
-summary(mlm)
+lm3 <- lm(formula = alpha_diff_avg ~ salinity + temp_avg, data = alpha_values_combined)
+summary(lm3)
 
 # interactive effect of salinity and temp
-mlm_interact <- lm(formula = alpha_diff_avg ~ salinity + temp_avg + salinity:temp_avg, data = alpha_values_combined)
-summary(mlm_interact)
+lm4 <- lm(formula = alpha_diff_avg ~ salinity + temp_avg + salinity:temp_avg, data = alpha_values_combined)
+summary(lm4)
+
+### To summarize the output we can say:
+# In freshwater there is a weak positive effect of temp (0.2409)
+# In saltwater there is a stronger positive effect of temp (0.5497)
+
+########
+
+# looking at other variables and interactions
+# lets start by looking at the post mortem data
+# condition factor (CF), hepatosomatic index (HSI), % tissue and liver dry weight
+  
+post_mort <- read.csv("meta_postmort.csv")
+
+# add relevant columns to the combined df
+alpha_values_combined <- alpha_values_combined %>% 
+  left_join(post_mort %>% 
+              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw),
+            by = "fish_id")
+
+#adding date to do some exploratory plotting
+alpha_values_combined <- alpha_values_combined %>% 
+  left_join(highest_alpha_int %>% 
+              select(fish_id, datetime),
+            by = "fish_id")
+
+alpha_values_combined <- alpha_values_combined %>% 
+  mutate(date = as.Date(datetime)) %>% 
+  select(-datetime)
+
+#back to lm
+
+lm5 <- lm(formula = alpha_diff_avg ~ cf, data = alpha_values_combined)
+summary(lm5)
+
+lm6 <- lm(formula = alpha_diff_avg ~ hsi, data = alpha_values_combined)
+summary(lm6)
+
+lm7 <- lm(formula = alpha_diff_avg ~ l_perc_dw, data = alpha_values_combined)
+summary(lm7)
+
+lm8 <- lm(formula = alpha_diff_avg ~ t_perc_dw, data = alpha_values_combined)
+summary(lm8)
+
+lm9 <- lm(formula = alpha_diff_avg ~ l_perc_dw * t_perc_dw, data = alpha_values_combined)
+summary(lm9)
+
+lm10 <- lm(formula = alpha_diff_avg ~ cf * hsi, data = alpha_values_combined)
+summary(lm10)
+
+lm11 <- lm(formula = alpha_diff_avg ~ cf * salinity, data = alpha_values_combined)
+summary(lm11)
+
+lm12 <- lm(formula = alpha_diff_avg ~ hsi * salinity, data = alpha_values_combined)
+summary(lm12)
+
+lm13 <- lm(formula = alpha_diff_avg ~ cf * hsi * salinity, data = alpha_values_combined)
+summary(lm13)
+
+lm14 <- lm(formula = alpha_diff_avg ~ hsi * temp_avg, data = alpha_values_combined)
+summary(lm14)
+
+lm15 <- lm(formula = alpha_diff_avg ~ hsi * temp_avg * salinity, data = alpha_values_combined)
+summary(lm15)
+
+
+######
+#Running AIC to determine the best model
+library(AICcmodavg)
+
+models <- list(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15)
+aictab(cand.set = models)
 
 
 # Plots -------------------------------------------------------------------
