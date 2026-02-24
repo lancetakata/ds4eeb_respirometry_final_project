@@ -104,7 +104,7 @@ alpha_values_combined <- alpha_values_combined %>%
   select(-c(temp_int,temp_closed))
 
 
-########
+###t-test##### 
   
 # run paired sample t-test, with avg alpha_int and avg_alpha_closed
 # this will tell us if the two values are different, essentially calculates the difference between them
@@ -141,7 +141,7 @@ summary(lm4)
 # In freshwater there is a weak positive effect of temp (0.2409)
 # In saltwater there is a stronger positive effect of temp (0.5497)
 
-########
+##Post-mortem analysis######
 
 # looking at other variables and interactions
 # lets start by looking at the post mortem data
@@ -201,7 +201,7 @@ lm15 <- lm(formula = alpha_diff_avg ~ hsi * temp_avg * salinity, data = alpha_va
 summary(lm15)
 
 
-######
+##AIC evaluation####
 #Running AIC to determine the best model
 library(AICcmodavg)
 
@@ -241,6 +241,30 @@ ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o
     x = "O2 mg/L",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   theme_bw()
+
+####Post mortem plots######
+
+#plot alpha diff by hsi
+ggplot(alpha_values_combined, aes(x = hsi, y = alpha_diff_avg, color = salinity)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2")
+
+#plot alpha diff by cf
+ggplot(alpha_values_combined, aes(x = cf, y = alpha_diff_avg, color = salinity)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2")
+
+#plot alpha diff by l %dw
+ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = salinity)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2")
+
+#plot alpha diff by tissue %dw
+ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = salinity)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2")
+
+
 
 #summary statistics
 #count of each intermittent completed
