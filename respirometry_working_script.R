@@ -105,6 +105,29 @@ alpha_values_combined <- alpha_values_combined %>%
          temp_avg = ((avg_temp_closed + avg_temp_int)/2)) %>% 
   select(-c(avg_temp_int, avg_temp_closed))
 
+#Post-mortem analysis ---------------------------------------------------
+
+# looking at other variables and interactions
+# lets start by looking at the post mortem data
+# condition factor (CF), hepatosomatic index (HSI), % tissue and liver dry weight
+
+post_mort <- read.csv("meta_postmort.csv")
+
+# add relevant columns to the combined df
+alpha_values_combined <- alpha_values_combined %>% 
+  left_join(post_mort %>% 
+              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g),
+            by = "fish_id")
+
+#adding date to do some exploratory plotting
+alpha_values_combined <- alpha_values_combined %>% 
+  left_join(highest_alpha_int %>% 
+              select(fish_id, datetime),
+            by = "fish_id")
+
+alpha_values_combined <- alpha_values_combined %>% 
+  mutate(date = as.Date(datetime)) %>% 
+  select(-datetime)
   
 ###### t-test ###### 
   
@@ -143,73 +166,13 @@ summary(lm4)
 # In freshwater there is a weak positive effect of temp (0.2409)
 # In saltwater there is a stronger positive effect of temp (0.5497)
 
-###### Post-mortem analysis ######
-
-# looking at other variables and interactions
-# lets start by looking at the post mortem data
-# condition factor (CF), hepatosomatic index (HSI), % tissue and liver dry weight
-  
-post_mort <- read.csv("meta_postmort.csv")
-
-# add relevant columns to the combined df
-alpha_values_combined <- alpha_values_combined %>% 
-  left_join(post_mort %>% 
-              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g),
-            by = "fish_id")
-
-#adding date to do some exploratory plotting
-alpha_values_combined <- alpha_values_combined %>% 
-  left_join(highest_alpha_int %>% 
-              select(fish_id, datetime),
-            by = "fish_id")
-
-alpha_values_combined <- alpha_values_combined %>% 
-  mutate(date = as.Date(datetime)) %>% 
-  select(-datetime)
-
-# some questionable points that may need to be removed
-
-#back to lm
-
-lm5 <- lm(formula = alpha_diff_avg ~ cf, data = alpha_values_combined)
-summary(lm5)
-
-lm6 <- lm(formula = alpha_diff_avg ~ hsi, data = alpha_values_combined)
-summary(lm6)
-
-lm7 <- lm(formula = alpha_diff_avg ~ l_perc_dw, data = alpha_values_combined)
-summary(lm7)
-
-lm8 <- lm(formula = alpha_diff_avg ~ t_perc_dw, data = alpha_values_combined)
-summary(lm8)
-
-lm9 <- lm(formula = alpha_diff_avg ~ l_perc_dw + t_perc_dw, data = alpha_values_combined)
-summary(lm9)
-
-lm10 <- lm(formula = alpha_diff_avg ~ cf + hsi, data = alpha_values_combined)
-summary(lm10)
-
-lm11 <- lm(formula = alpha_diff_avg ~ cf * salinity, data = alpha_values_combined)
-summary(lm11)
-
-lm12 <- lm(formula = alpha_diff_avg ~ hsi * salinity, data = alpha_values_combined)
-summary(lm12)
-
-lm13 <- lm(formula = alpha_diff_avg ~ cf * hsi * salinity, data = alpha_values_combined)
-summary(lm13)
-
-lm14 <- lm(formula = alpha_diff_avg ~ hsi * temp_avg, data = alpha_values_combined)
-summary(lm14)
-
-lm15 <- lm(formula = alpha_diff_avg ~ hsi * temp_avg * salinity, data = alpha_values_combined)
-summary(lm15)
-
 
 # are data normally distributed?
 shapiro.test(alpha_values_combined$alpha_diff_avg)
 qqPlot(alpha_values_combined$alpha_diff_avg)
 
 # function for producing a plot of pairwise correlations among predictors
+
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
   usr <- par("usr"); on.exit(par(usr))
   par(usr = c(0, 1, 0, 1))
@@ -236,6 +199,8 @@ model2 <- lm(alpha_diff_avg ~ salinity + log(posttrial_wet_weight_g) + salinity:
 model3 <- lm(alpha_diff_avg ~ salinity + temp_avg + salinity:temp_avg, alpha_values_combined)
 model4 <- lm(alpha_diff_avg ~ salinity + log(posttrial_wet_weight_g) + temp_avg +
               salinity:log(posttrial_wet_weight_g) + salinity:temp_avg, alpha_values_combined)
+
+##AIC evaluation####
 
 temp <- data.frame(AIC(model1, model2, model3,  model4)) %>%
   mutate(BIC = BIC(model1, model2, model3,  model4)$BIC) %>%
@@ -267,19 +232,6 @@ newdata %>%
   geom_line(aes(col=salinity)) +
   geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
 
-
-
-##AIC evaluation####
-#Running AIC to determine the best model
-library(AICcmodavg)
-
-AICmodels <- list(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15)
-aictab(cand.set = models)
-
-BICmodels <- list(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15)
-bictab(cand.set = models)
-
-#AIC selects model 4, BIC selects model 3
 
 # Plots -------------------------------------------------------------------
 ###### Plots of o2 and salinity ######
@@ -321,6 +273,13 @@ ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = sali
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
 
+#plot alpha diff by mass
+alpha_values_combined %>% 
+  ggplot(aes(x = posttrial_wet_weight_g, y = alpha_diff_avg, color = salinity)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
 
 ###### Post mortem plots ######
 
@@ -348,13 +307,6 @@ ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = sal
 
 #plot alpha diff by tissue %dw
 ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = salinity)) +
-  geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2") +
-  geom_smooth(method = lm)
-
-#plot alpha diff by mass
-alpha_values_combined %>% 
-  ggplot(aes(x = posttrial_wet_weight_g, y = alpha_diff_avg, color = salinity)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
