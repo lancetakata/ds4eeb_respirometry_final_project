@@ -104,7 +104,7 @@ alpha_values_combined <- alpha_values_combined %>%
   select(-c(temp_int,temp_closed))
 
 
-###t-test##### 
+###### t-test ###### 
   
 # run paired sample t-test, with avg alpha_int and avg_alpha_closed
 # this will tell us if the two values are different, essentially calculates the difference between them
@@ -141,7 +141,7 @@ summary(lm4)
 # In freshwater there is a weak positive effect of temp (0.2409)
 # In saltwater there is a stronger positive effect of temp (0.5497)
 
-##Post-mortem analysis######
+###### Post-mortem analysis ######
 
 # looking at other variables and interactions
 # lets start by looking at the post mortem data
@@ -165,6 +165,9 @@ alpha_values_combined <- alpha_values_combined %>%
   mutate(date = as.Date(datetime)) %>% 
   select(-datetime)
 
+# some questionable points that may need to be removed
+# FV091 has very high cf, questionable FL
+
 #back to lm
 
 lm5 <- lm(formula = alpha_diff_avg ~ cf, data = alpha_values_combined)
@@ -179,10 +182,10 @@ summary(lm7)
 lm8 <- lm(formula = alpha_diff_avg ~ t_perc_dw, data = alpha_values_combined)
 summary(lm8)
 
-lm9 <- lm(formula = alpha_diff_avg ~ l_perc_dw * t_perc_dw, data = alpha_values_combined)
+lm9 <- lm(formula = alpha_diff_avg ~ l_perc_dw + t_perc_dw, data = alpha_values_combined)
 summary(lm9)
 
-lm10 <- lm(formula = alpha_diff_avg ~ cf * hsi, data = alpha_values_combined)
+lm10 <- lm(formula = alpha_diff_avg ~ cf + hsi, data = alpha_values_combined)
 summary(lm10)
 
 lm11 <- lm(formula = alpha_diff_avg ~ cf * salinity, data = alpha_values_combined)
@@ -205,11 +208,16 @@ summary(lm15)
 #Running AIC to determine the best model
 library(AICcmodavg)
 
-models <- list(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15)
+AICmodels <- list(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15)
 aictab(cand.set = models)
 
+BICmodels <- list(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15)
+bictab(cand.set = models)
+
+#AIC selects model 4, BIC selects model 3
 
 # Plots -------------------------------------------------------------------
+###### Plots of o2 and salinity ######
 
 #plot alpha vs temp by salinity
 ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = salinity)) +
@@ -242,31 +250,47 @@ ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   theme_bw()
 
-####Post mortem plots######
+# alpha diff vs temp by salinity
+ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = salinity)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
+
+###### Post mortem plots ######
 
 #plot alpha diff by hsi
-ggplot(alpha_values_combined, aes(x = hsi, y = alpha_diff_avg, color = salinity)) +
+alpha_values_combined %>% 
+  filter(fish_id != "FV077") %>% 
+  ggplot(aes(x = hsi, y = alpha_diff_avg, color = salinity)) +
   geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2")
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
 
 #plot alpha diff by cf
-ggplot(alpha_values_combined, aes(x = cf, y = alpha_diff_avg, color = salinity)) +
+alpha_values_combined %>% 
+  filter(fish_id != "FV091") %>% 
+  ggplot(aes(x = cf, y = alpha_diff_avg, color = salinity)) +
   geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2")
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
 
 #plot alpha diff by l %dw
 ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = salinity)) +
   geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2")
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
 
 #plot alpha diff by tissue %dw
 ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = salinity)) +
   geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2")
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
 
 
 
-#summary statistics
+###### Summary statistics ######
+
 #count of each intermittent completed
 highest_alpha_int %>% 
   filter(salinity == "Freshwater") %>% 
