@@ -10,7 +10,7 @@ library(stats)
 
 # Alpha Int ---------------------------------------------------------------
 
-# This section will calculate the avg of the 3 highest alpha values  from the intermittent experiment for each fish
+# This section will calculate the avg of the 3 highest alpha values from the intermittent experiment for each fish
 alpha_int <- read.csv("alpha_int.csv")
 
 #add column "Salinity" identifying if a fish was saltwater or freshwater
@@ -36,7 +36,8 @@ alpha_values_int<- alpha_int %>%
             avg_temp_int = mean(temp_c)) %>% 
   left_join(highest_alpha_int %>%
               select(fish_id, alpha_int_mgo2_kg_h_kPa), by = "fish_id") %>% 
-  rename(highest_alpha_int = alpha_int_mgo2_kg_h_kPa)
+  rename(highest_alpha_int = alpha_int_mgo2_kg_h_kPa) %>% 
+  ungroup()
 
 
 #add in SMR values from int trials
@@ -83,7 +84,8 @@ alpha_values_closed<- alpha_closed %>%
             avg_temp_closed = mean(temp_c)) %>% 
   left_join(highest_alpha_closed %>%
               select(fish_id, alpha_close_mgo2_kg_h_kPa), by = "fish_id") %>% 
-  rename(highest_alpha_closed = alpha_close_mgo2_kg_h_kPa)
+  rename(highest_alpha_closed = alpha_close_mgo2_kg_h_kPa) %>% 
+  ungroup()
 
 
 # Alpha Values combined ---------------------------------------------------
@@ -152,7 +154,7 @@ post_mort <- read.csv("meta_postmort.csv")
 # add relevant columns to the combined df
 alpha_values_combined <- alpha_values_combined %>% 
   left_join(post_mort %>% 
-              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw),
+              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g),
             by = "fish_id")
 
 #adding date to do some exploratory plotting
@@ -166,7 +168,6 @@ alpha_values_combined <- alpha_values_combined %>%
   select(-datetime)
 
 # some questionable points that may need to be removed
-# FV091 has very high cf, questionable FL
 
 #back to lm
 
@@ -202,6 +203,70 @@ summary(lm14)
 
 lm15 <- lm(formula = alpha_diff_avg ~ hsi * temp_avg * salinity, data = alpha_values_combined)
 summary(lm15)
+
+
+# are data normally distributed?
+shapiro.test(alpha_values_combined$alpha_diff_avg)
+qqPlot(alpha_values_combined$alpha_diff_avg)
+
+# function for producing a plot of pairwise correlations among predictors
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y,use = "all.obs",method = "spearman"))
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste0(prefix, txt)
+  if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt) }
+
+
+temp <- alpha_values_combined %>%
+  filter(!is.na(alpha_diff_avg)) %>%
+  ungroup() %>%
+  mutate(ww_log = log(posttrial_wet_weight_g)) %>%
+  select(ww_log,temp_avg)
+
+# plot correlations
+pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
+      gap=0, row1attop=FALSE)
+
+
+model1 <- lm(alpha_diff_avg ~ salinity, alpha_values_combined)
+model2 <- lm(alpha_diff_avg ~ salinity + log(posttrial_wet_weight_g) + salinity:log(posttrial_wet_weight_g), alpha_values_combined)
+model3 <- lm(alpha_diff_avg ~ salinity + temp_avg + salinity:temp_avg, alpha_values_combined)
+model4 <- lm(alpha_diff_avg ~ salinity + log(posttrial_wet_weight_g) + temp_avg +
+              salinity:log(posttrial_wet_weight_g) + salinity:temp_avg, alpha_values_combined)
+
+temp <- data.frame(AIC(model1, model2, model3,  model4)) %>%
+  mutate(BIC = BIC(model1, model2, model3,  model4)$BIC) %>%
+  arrange(BIC)
+temp
+
+plot(model3)
+plot(model4)
+
+Anova(model3)
+Anova(model4)
+
+summary(model3)
+
+newdata <- expand.grid(salinity = unique(alpha_values_combined$salinity),
+                       temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
+                                      max(alpha_values_combined$temp_avg,na.rm=T),length.out=100))
+
+prdata <- predict(model3,newdata = newdata, se.fit = T)
+
+
+newdata$fit <- prdata$fit
+newdata$lcl <- prdata$fit - prdata$se.fit*2
+newdata$ucl <- prdata$fit + prdata$se.fit*2
+
+newdata %>%
+  ggplot(aes(temp_avg,fit,fill=salinity)) +
+  geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,col=salinity)) +
+  geom_line(aes(col=salinity)) +
+  geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
+
 
 
 ##AIC evaluation####
@@ -287,6 +352,12 @@ ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = sal
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
 
+#plot alpha diff by mass
+alpha_values_combined %>% 
+  ggplot(aes(x = posttrial_wet_weight_g, y = alpha_diff_avg, color = salinity)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
 
 
 ###### Summary statistics ######
