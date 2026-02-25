@@ -32,11 +32,11 @@ highest_alpha_int <- alpha_int %>%
 
 alpha_values_int<- alpha_int %>% 
   group_by(fish_id, salinity) %>% 
-  summarise(avg_alpha_int= mean(alpha_int_mgo2_kg_h_kPa)) %>% 
+  summarise(avg_alpha_int= mean(alpha_int_mgo2_kg_h_kPa),
+            avg_temp_int = mean(temp_c)) %>% 
   left_join(highest_alpha_int %>%
-              select(fish_id, alpha_int_mgo2_kg_h_kPa, temp_c), by = "fish_id") %>% 
-  rename(highest_alpha_int = alpha_int_mgo2_kg_h_kPa,
-         temp_int = temp_c)
+              select(fish_id, alpha_int_mgo2_kg_h_kPa), by = "fish_id") %>% 
+  rename(highest_alpha_int = alpha_int_mgo2_kg_h_kPa)
 
 
 #add in SMR values from int trials
@@ -79,11 +79,11 @@ highest_alpha_closed <- alpha_closed %>%
 #avg alpha value and make new df with both avg and highest values
 alpha_values_closed<- alpha_closed %>% 
   group_by(fish_id, salinity) %>% 
-  summarise(avg_alpha_closed= mean(alpha_close_mgo2_kg_h_kPa)) %>% 
+  summarise(avg_alpha_closed= mean(alpha_close_mgo2_kg_h_kPa),
+            avg_temp_closed = mean(temp_c)) %>% 
   left_join(highest_alpha_closed %>%
-              select(fish_id, alpha_close_mgo2_kg_h_kPa, temp_c), by = "fish_id") %>% 
-  rename(highest_alpha_closed = alpha_close_mgo2_kg_h_kPa,
-         temp_closed = temp_c)
+              select(fish_id, alpha_close_mgo2_kg_h_kPa), by = "fish_id") %>% 
+  rename(highest_alpha_closed = alpha_close_mgo2_kg_h_kPa)
 
 
 # Alpha Values combined ---------------------------------------------------
@@ -93,17 +93,17 @@ alpha_values_closed<- alpha_closed %>%
 
 alpha_values_combined <- alpha_values_int %>% 
   left_join(alpha_values_closed %>% 
-              select(fish_id, avg_alpha_closed, temp_closed),
+              select(fish_id, avg_alpha_closed, avg_temp_closed),
             by = "fish_id")
 
 # calculate difference between alpha_closed and alpha_int
-# also calculate the avg temp between the two values
+# avg temp values of closed and int values, can do a simple avg because there are equal # of values in closed and int
 alpha_values_combined <- alpha_values_combined %>% 
   mutate(alpha_diff_avg = avg_alpha_int -avg_alpha_closed,
-         temp_avg = ((temp_closed + temp_int)/2)) %>% 
-  select(-c(temp_int,temp_closed))
+         temp_avg = ((avg_temp_closed + avg_temp_int)/2)) %>% 
+  select(-c(avg_temp_int, avg_temp_closed))
 
-
+  
 ###### t-test ###### 
   
 # run paired sample t-test, with avg alpha_int and avg_alpha_closed
