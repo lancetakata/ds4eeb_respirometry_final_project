@@ -1,6 +1,7 @@
 library(tidyverse)
 library(respirometry)
 library(stats)
+library(car)
 
 # Intro -------------------------------------------------------------------
 
@@ -202,10 +203,11 @@ model4 <- lm(alpha_diff_avg ~ salinity + log(posttrial_wet_weight_g) + temp_avg 
 
 ##AIC evaluation####
 
-temp <- data.frame(AIC(model1, model2, model3,  model4)) %>%
+#df that shows AIC and BIC results
+evaluation <- data.frame(AIC(model1, model2, model3,  model4)) %>%
   mutate(BIC = BIC(model1, model2, model3,  model4)$BIC) %>%
   arrange(BIC)
-temp
+
 
 plot(model3)
 plot(model4)
@@ -215,17 +217,21 @@ Anova(model4)
 
 summary(model3)
 
+# creating new data of all combinations of salinity and temp
 newdata <- expand.grid(salinity = unique(alpha_values_combined$salinity),
                        temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
                                       max(alpha_values_combined$temp_avg,na.rm=T),length.out=100))
 
+# how does model3 predict this new data
 prdata <- predict(model3,newdata = newdata, se.fit = T)
 
+#creating plot of the new data fit
 
 newdata$fit <- prdata$fit
-newdata$lcl <- prdata$fit - prdata$se.fit*2
-newdata$ucl <- prdata$fit + prdata$se.fit*2
+newdata$lcl <- prdata$fit - prdata$se.fit*2 #lower cl, -fit x2
+newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
 
+#plot of this fit with the ucl and lcl
 newdata %>%
   ggplot(aes(temp_avg,fit,fill=salinity)) +
   geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,col=salinity)) +
