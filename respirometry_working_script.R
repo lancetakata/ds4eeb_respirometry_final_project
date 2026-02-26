@@ -2,6 +2,7 @@ library(tidyverse)
 library(respirometry)
 library(stats)
 library(car)
+library(lubridate)
 
 # Intro -------------------------------------------------------------------
 
@@ -20,6 +21,21 @@ alpha_int <- alpha_int %>%
     sal_ppt == 35 ~ "Saltwater",
     sal_ppt == 0  ~ "Freshwater"))
 
+# add column classifying if fish was ran in fresh or saltwater and what lifestage it is
+# use lubridate on datetime column
+alpha_int$datetime <- ymd_hms(alpha_int$datetime)
+
+# use dates of exp to determine if saltwater juvenile"SJ", freshwater juvenile"FJ" or subadult saltwater"SS"
+sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
+fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
+alpha_int <- alpha_int %>%
+  mutate(lifestage = case_when(
+    datetime < sj_cutoff ~ "SJ",
+    datetime < fj_cutoff ~ "FJ",  # anything >= SJ cutoff but < FJ cutoff
+    TRUE ~ "SS"                   # everything else
+  ))
+
+
 #keep only the highest alpha value
 #this is to test if there is any difference between the single highest and the avg of the highest 3 values
 highest_alpha_int <- alpha_int %>%
@@ -36,7 +52,7 @@ alpha_values_int<- alpha_int %>%
   summarise(avg_alpha_int= mean(alpha_int_mgo2_kg_h_kPa),
             avg_temp_int = mean(temp_c)) %>% 
   left_join(highest_alpha_int %>%
-              select(fish_id, alpha_int_mgo2_kg_h_kPa), by = "fish_id") %>% 
+              select(fish_id, alpha_int_mgo2_kg_h_kPa,lifestage), by = "fish_id") %>% 
   rename(highest_alpha_int = alpha_int_mgo2_kg_h_kPa) %>% 
   ungroup()
 
