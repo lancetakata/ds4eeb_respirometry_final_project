@@ -140,14 +140,11 @@ alpha_values_combined <- alpha_values_combined %>%
               select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g, fish_mort_pcrit),
             by = "fish_id")
 
-post_mort %>% 
-  filter(fish_mort_pcrit == "Y") %>% 
-  distinct(fish_id)
-
 # removing fish that died during pcrit trial
 # a total of 10 fish removed, 2 were already removed due to acclimation flag
 alpha_values_combined <- alpha_values_combined %>% 
   filter(fish_mort_pcrit != "Y")
+
 
 #adding date to do some exploratory plotting
 alpha_values_combined <- alpha_values_combined %>% 
@@ -222,34 +219,46 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
       gap=0, row1attop=FALSE)
 
 
+#relevel lifestage so that SS is the first reference
+alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "SS", "SJ")
+
 model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
-model2 <- lm(alpha_diff_avg ~ lifestage + log(posttrial_wet_weight_g) + lifestage:log(posttrial_wet_weight_g), alpha_values_combined)
-model3 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)
-model4 <- lm(alpha_diff_avg ~ lifestage + log(posttrial_wet_weight_g) + temp_avg +
-               lifestage:log(posttrial_wet_weight_g) + lifestage:temp_avg, alpha_values_combined)
+model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)
+model3 <- lm(alpha_diff_avg ~ lifestage + temp_avg + t_perc_dw +
+               lifestage:t_perc_dw + lifestage:temp_avg, alpha_values_combined)
 
 ##AIC evaluation####
 
 #df that shows AIC and BIC results
-evaluation <- data.frame(AIC(model1, model2, model3,  model4)) %>%
-  mutate(BIC = BIC(model1, model2, model3,  model4)$BIC) %>%
+evaluation <- data.frame(AIC(model1, model2, model3)) %>%
+  mutate(BIC = BIC(model1, model2, model3)$BIC) %>%
   arrange(BIC)
 
 
 plot(model3)
-plot(model4)
-
 Anova(model3)
-Anova(model4)
-
 summary(model3)
 
-# creating new data of all combinations of salinity and temp
-newdata <- expand.grid(salinity = unique(alpha_values_combined$salinity),
-                       temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
-                                      max(alpha_values_combined$temp_avg,na.rm=T),length.out=100))
 
-# how does model3 predict this new data
+#visualize the model
+library(visreg)
+visreg(model3, "temp_avg", by = "lifestage",)
+
+
+
+
+
+# creating new data of all combinations of lifestage, temp, and posttrial_wet_weight
+newdata <- expand.grid(lifestage = unique(alpha_values_combined$lifestage),
+                       temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
+                                      max(alpha_values_combined$temp_avg,na.rm=T),length.out=100), 
+                       t_perc_dw = median(alpha_values_combined$t_perc_dw)
+                       )
+
+
+
+
+# how does model4 predict this new data
 prdata <- predict(model3,newdata = newdata, se.fit = T)
 
 #creating plot of the new data fit
@@ -260,30 +269,35 @@ newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
 
 #plot of this fit with the ucl and lcl
 newdata %>%
-  ggplot(aes(temp_avg,fit,fill=salinity)) +
-  geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,col=salinity)) +
-  geom_line(aes(col=salinity)) +
+  ggplot(aes(temp_avg,fit,fill=lifestage)) +
+  geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,col=lifestage)) +
+  geom_line(aes(col=lifestage)) +
   geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
 
+
+newdata %>% 
+  ggplot(aes(temp_avg, fit, colour = lifestage)) +
+    geom_point()
 
 # Plots -------------------------------------------------------------------
 ###### Plots of o2 and salinity ######
 
 #plot alpha vs temp by salinity
-ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = salinity)) +
+ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = lifestage)) +
   geom_point(alpha = 0.7)+
   labs(
-    title = "Alpha vs Temperature by Salinity",
+    title = "Alpha vs Temperature by Lifestage",
     x = "Temperature (°C)",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
-  scale_color_brewer(palette = "Set2")
+  geom_smooth(method = lm) +
+  scale_color_brewer(palette = "Set1")
 
 #plot smr vs temp by salinity
-ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = Salinity)) +
+ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = lifestage)) +
   geom_point(alpha = 0.7) +
-  geom_smooth(alpha = 0.2) +
+  geom_smooth(method = lm) +
   labs(
-    title = "SMR vs Temperature by Salinity",
+    title = "SMR vs Temperature by lifestage",
     x = "Temperature (°C)",
     y = "SMR (mgO2kg-1h)") +
   scale_color_brewer(palette = "Set2")
@@ -301,14 +315,14 @@ ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o
   theme_bw()
 
 # alpha diff vs temp by salinity
-ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = salinity)) +
+ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = lifestage)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
 
 #plot alpha diff by mass
 alpha_values_combined %>% 
-  ggplot(aes(x = posttrial_wet_weight_g, y = alpha_diff_avg, color = salinity)) +
+  ggplot(aes(x = log(posttrial_wet_weight_g), y = alpha_diff_avg, color = lifestage)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
@@ -319,7 +333,7 @@ alpha_values_combined %>%
 #plot alpha diff by hsi
 alpha_values_combined %>% 
   filter(fish_id != "FV077") %>% 
-  ggplot(aes(x = hsi, y = alpha_diff_avg, color = salinity)) +
+  ggplot(aes(x = hsi, y = alpha_diff_avg, color = lifestage)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
@@ -327,19 +341,19 @@ alpha_values_combined %>%
 #plot alpha diff by cf
 alpha_values_combined %>% 
   filter(fish_id != "FV091") %>% 
-  ggplot(aes(x = cf, y = alpha_diff_avg, color = salinity)) +
+  ggplot(aes(x = cf, y = alpha_diff_avg, color = lifestage)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
 
 #plot alpha diff by l %dw
-ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = salinity)) +
+ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = lifestage)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
 
 #plot alpha diff by tissue %dw
-ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = salinity)) +
+ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = lifestage)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
