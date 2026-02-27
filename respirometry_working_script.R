@@ -33,7 +33,11 @@ alpha_int <- alpha_int %>%
     datetime < sj_cutoff ~ "SJ",
     datetime < fj_cutoff ~ "FJ",  # anything >= SJ cutoff but < FJ cutoff
     TRUE ~ "SS"                   # everything else
-  ))
+  )) 
+# change lifestage column to a factor
+alpha_int$lifestage <- as.factor(alpha_int$lifestage)
+
+
 
 
 #keep only the highest alpha value
@@ -133,19 +137,26 @@ post_mort <- read.csv("meta_postmort.csv")
 # add relevant columns to the combined df
 alpha_values_combined <- alpha_values_combined %>% 
   left_join(post_mort %>% 
-              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g),
+              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g, fish_mort_pcrit),
             by = "fish_id")
+
+post_mort %>% 
+  filter(fish_mort_pcrit == "Y") %>% 
+  distinct(fish_id)
+
+# removing fish that died during pcrit trial
+# a total of 10 fish removed, 2 were already removed due to acclimation flag
+alpha_values_combined <- alpha_values_combined %>% 
+  filter(fish_mort_pcrit != "Y")
 
 #adding date to do some exploratory plotting
 alpha_values_combined <- alpha_values_combined %>% 
   left_join(highest_alpha_int %>% 
               select(fish_id, datetime),
-            by = "fish_id")
-
-alpha_values_combined <- alpha_values_combined %>% 
-  mutate(date = as.Date(datetime)) %>% 
+            by = "fish_id") %>% 
+  mutate(date = as.Date(datetime,)) %>% 
   select(-datetime)
-  
+
 ###### t-test ###### 
   
 # run paired sample t-test, with avg alpha_int and avg_alpha_closed
@@ -211,11 +222,11 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
       gap=0, row1attop=FALSE)
 
 
-model1 <- lm(alpha_diff_avg ~ salinity, alpha_values_combined)
-model2 <- lm(alpha_diff_avg ~ salinity + log(posttrial_wet_weight_g) + salinity:log(posttrial_wet_weight_g), alpha_values_combined)
-model3 <- lm(alpha_diff_avg ~ salinity + temp_avg + salinity:temp_avg, alpha_values_combined)
-model4 <- lm(alpha_diff_avg ~ salinity + log(posttrial_wet_weight_g) + temp_avg +
-              salinity:log(posttrial_wet_weight_g) + salinity:temp_avg, alpha_values_combined)
+model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
+model2 <- lm(alpha_diff_avg ~ lifestage + log(posttrial_wet_weight_g) + lifestage:log(posttrial_wet_weight_g), alpha_values_combined)
+model3 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)
+model4 <- lm(alpha_diff_avg ~ lifestage + log(posttrial_wet_weight_g) + temp_avg +
+               lifestage:log(posttrial_wet_weight_g) + lifestage:temp_avg, alpha_values_combined)
 
 ##AIC evaluation####
 
