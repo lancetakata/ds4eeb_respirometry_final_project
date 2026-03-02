@@ -245,24 +245,18 @@ library(visreg)
 visreg(model3, "temp_avg", by = "lifestage",)
 
 
-
-
-
 # creating new data of all combinations of lifestage, temp, and posttrial_wet_weight
 newdata <- expand.grid(lifestage = unique(alpha_values_combined$lifestage),
                        temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
-                                      max(alpha_values_combined$temp_avg,na.rm=T),length.out=100), 
-                       t_perc_dw = median(alpha_values_combined$t_perc_dw)
+                                      max(alpha_values_combined$temp_avg,na.rm=T),length.out=100),
+                       t_perc_dw = mean(alpha_values_combined$t_perc_dw)
                        )
 
 
-
-
-# how does model4 predict this new data
+# how does model3 predict this new data
 prdata <- predict(model3,newdata = newdata, se.fit = T)
 
 #creating plot of the new data fit
-
 newdata$fit <- prdata$fit
 newdata$lcl <- prdata$fit - prdata$se.fit*2 #lower cl, -fit x2
 newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
@@ -270,9 +264,9 @@ newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
 #plot of this fit with the ucl and lcl
 newdata %>%
   ggplot(aes(temp_avg,fit,fill=lifestage)) +
-  geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,col=lifestage)) +
-  geom_line(aes(col=lifestage)) +
-  geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
+    geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,col=lifestage)) +
+    geom_line(aes(col=lifestage)) +
+    geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
 
 
 newdata %>% 
@@ -280,9 +274,9 @@ newdata %>%
     geom_point()
 
 # Plots -------------------------------------------------------------------
-###### Plots of o2 and salinity ######
+###### Plots of alpha by o2 and lifestage  ######
 
-#plot alpha vs temp by salinity
+#plot alpha vs temp by lifestage
 ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = lifestage)) +
   geom_point(alpha = 0.7)+
   labs(
@@ -292,7 +286,7 @@ ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = l
   geom_smooth(method = lm) +
   scale_color_brewer(palette = "Set1")
 
-#plot smr vs temp by salinity
+#plot smr vs temp by lifestage
 ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = lifestage)) +
   geom_point(alpha = 0.7) +
   geom_smooth(method = lm) +
@@ -303,18 +297,18 @@ ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = lifestage)) +
   scale_color_brewer(palette = "Set2")
 
 
-#plot alpha vs o2 by salinity
+#plot alpha vs o2 by lifestage
 ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o2_mgl)) +
   geom_point(alpha = 0.6) +
   scale_color_gradient(low = "blue", high = "red")+
-  facet_wrap(~salinity) +
+  facet_wrap(~lifestage) +
   labs(
-    title = "Alpha vs DO by Salinity",
+    title = "Alpha vs DO by Lifestage",
     x = "O2 mg/L",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   theme_bw()
 
-# alpha diff vs temp by salinity
+# alpha diff vs temp by lifestage
 ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = lifestage)) +
   geom_point(alpha = 0.7) +
   scale_color_brewer(palette = "Set2") +
