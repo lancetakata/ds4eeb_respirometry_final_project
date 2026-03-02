@@ -1,6 +1,20 @@
 # Future viability readme
 
-This is just for the three rounds of experiments, freshwater smolt, saltwater smolt, saltwater subadult
+Motivating Question:
+
+Rationale:
+
+Background:
+
+**Introduction**: Changing ocean conditions will result in altered marine ecosystems. **As marine conditions change, it is important to understand how populations will be redistributed throughout the oceans as current habitat becomes unsuitable and new viable habitat becomes available**. Ecological theory of habitat selection by species originally focused on biotic and abiotic interactions, but now also includes the physiology of the species themselves^1^. One method of predicting future distribution of marine species is by understanding their physiological sensitivities to hydrographic conditions to determine potentially viable habitat^2^. Ectotherms, such as fish, are particularly physiologically sensitive to temperature^3^ and temperature-dependent metabolism is a commonly used metric for physiological performance^4^. **We used laboratory respirometry experiments and computational modeling to understand the temperature-dependent metabolic performance across California central valley Chinook salmon *(Onchorhychus tshawystscha*) lifestages.**
+
+**Study System:** California central valley Chinook salmon (*Oncorhynchus tshawystscha*) are an ideal study system for this project due to their economic, cultural and ecological importance. Fall-run Chinook salmon supports a large commercial and recreational fishing, while winter-run Chinook salmon are state and federally listed endangered species due to their dramatic population decline and critically low population^5^. There is already a large amount of research focused on the conservation of California Chinook salmon, but the majority is focused on freshwater survival^6^. The future condition of their marine habitat, the California Current, is uncertain due to climate change^7^ and how the species will respond is a question to be answered. For these reasons, California Chinook salmon are a model study system for this investigation.
+
+**Data Collection:** Using NOAA SWFSC resources in Santa Cruz, CA, we raised hatchery-born California central valley Chinook salmon to a sub-adult marine life stage. These fish were raised in an artificial habitat under current ocean conditions in the California Current. Across three different transitional life stages we determined their metabolic performance capacity using closed respirometry at 13 different temperatures(8-20°C). The three life stages were a freshwater smolt lifestage, a saltwater smolt lifestage, and a saltwater sub-adult. Closed respirometry is the process of placing an organism in an airtight chamber and recording the dissolved oxygen consumption. In many species, such as salmon, the rate at which oxygen is consumed can be converted into the organism’s metabolic rate^4^. The process of closed respirometry entaileded acclimating groups of fish at a target temperature for 48 hours, then placing individuals into respirometry chambers for 24 hours to measure their dissolved oxygen consumption. Our data collection methods included an intermittent respirometry experiment where dissolved oxygen consumption was recorded at an elevated metabolic rate. This was acheived by conducting an exhaustive chase protocol then immediately placing the individual into the respirometry chamber. Additionally, closed respirometry experiment was conducted to record oxygen limited metabolic activity. This was done by sealing the respirometry chamber and allowing the individual to reduce the environmental oxygen. Finally, post-mortem data was collected on each individual including a wet weight, condition factor, hepatosomatic index, % dry weight of liver, and % dry weight of tissue.
+
+References:
+
+^1^Rosenzweig, 1991. ^2^Fausch, 1984. ^3^Huey and Kingsolver, 1993, Hochachka and Somero, 2002. ^4^Fry, 1971. ^5^Moyle et al 2017.  ^6^Eliason and Farrell, 2016. ^7^Crozier et al, 2019. ^8^Deutsch et al. 2015, Burford et al. 2022.
 
 **General info**
 
