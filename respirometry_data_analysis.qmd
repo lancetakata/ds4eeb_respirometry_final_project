@@ -272,7 +272,9 @@ library(visreg)
 visreg(model3, "temp_avg", by = "lifestage",)
 ```
 
-## New Data Frame with all Combinations of Lifestage, Temp, and posttrial_wet_weight
+## New Data Frame with all Combinations of Lifestage, Temp, and tissue % dry weight
+
+-   Here we are creating a new data frame with all combinations of lifestage, temp, and tissue % dry weight to test model3 predictions
 
 ```{r}
 # creating new data of all combinations of lifestage, temp, and posttrial_wet_weight
@@ -308,6 +310,8 @@ newdata %>%
 ```
 
 ## Plots
+
+-   Here we are creating exploratory plots to determine patterns and relationships and select explanatory outputs
 
 ```{r}
 ###### Plots of alpha by o2 and lifestage  ######
