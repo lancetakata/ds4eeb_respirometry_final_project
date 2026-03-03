@@ -4,10 +4,214 @@ format: html
 editor: visual
 ---
 
-## Data Tidying
+# Install and Load Packages
 
-Here is where we will paste the data tidying
+```{r}
+#install.packages(respirometry)
+#install.packages(car)
+#install.packages(visreg)
 
-## Exploratory Data Analysis
+library(tidyverse)
+library(respirometry)
+library(stats)
+library(car)
+library(lubridate)
+```
 
-## Explanatory Data Analysis
+# Data Tidying
+
+## Tidying the Alpha Intermittent data frame
+
+-   This section will calculate the avg of the 3 highest alpha values from the intermittent experiment for each fish
+
+```{r}
+alpha_int <- read.csv("alpha_int.csv")
+
+#add column "Salinity" identifying if a fish was saltwater or freshwater
+alpha_int <- alpha_int %>%
+  mutate(salinity = case_when(
+    sal_ppt == 35 ~ "Saltwater",
+    sal_ppt == 0  ~ "Freshwater"))
+
+# add column classifying if fish was ran in fresh or saltwater and what lifestage it is
+# use lubridate on datetime column
+alpha_int$datetime <- ymd_hms(alpha_int$datetime)
+
+# use dates of exp to determine if saltwater juvenile"SJ", freshwater juvenile"FJ" or subadult saltwater"SS"
+sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
+fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
+alpha_int <- alpha_int %>%
+  mutate(lifestage = case_when(
+    datetime < sj_cutoff ~ "SJ",
+    datetime < fj_cutoff ~ "FJ",  # anything >= SJ cutoff but < FJ cutoff
+    TRUE ~ "SS"                   # everything else
+  )) 
+# change lifestage column to a factor
+alpha_int$lifestage <- as.factor(alpha_int$lifestage)
+
+#keep only the highest alpha value
+#this is to test if there is any difference between the single highest and the avg of the highest 3 values
+highest_alpha_int <- alpha_int %>%
+  group_by(fish_id) %>%
+  slice_max(order_by = alpha_int_mgo2_kg_h_kPa, n = 1) %>%
+  ungroup()
+
+
+#avg the alpha_max value
+#create new df with the avg and the highest alpha value
+
+alpha_values_int<- alpha_int %>% 
+  group_by(fish_id, salinity) %>% 
+  summarise(avg_alpha_int= mean(alpha_int_mgo2_kg_h_kPa),
+            avg_temp_int = mean(temp_c)) %>% 
+  left_join(highest_alpha_int %>%
+              select(fish_id, alpha_int_mgo2_kg_h_kPa,lifestage), by = "fish_id") %>% 
+  rename(highest_alpha_int = alpha_int_mgo2_kg_h_kPa) %>% 
+  ungroup()
+
+```
+
+## Tidying the Alpha Closed data frame
+
+-   This section will calculate the avg of the 3 highest alpha values from the closed experiment for each fish
+
+-   \*Note: Not all fish have a closed experiment because some died during the intermittent experiment
+
+```{r}
+# read in closed alpha values
+alpha_closed <- read.csv("alpha_close.csv")
+
+#add in salinity
+alpha_closed <- alpha_closed %>%
+  mutate(salinity = case_when(
+    sal_ppt == 35 ~ "Saltwater",
+    sal_ppt == 0  ~ "Freshwater"))
+
+#keep highest alpha value
+#this is to test if there is any difference between the single highest and the avg of the highest 3 values
+highest_alpha_closed <- alpha_closed %>%
+  group_by(fish_id) %>%
+  slice_max(order_by = alpha_close_mgo2_kg_h_kPa, n = 1) %>%
+  ungroup()
+
+#avg alpha value and make new df with both avg and highest values
+alpha_values_closed<- alpha_closed %>% 
+  group_by(fish_id, salinity) %>% 
+  summarise(avg_alpha_closed= mean(alpha_close_mgo2_kg_h_kPa),
+            avg_temp_closed = mean(temp_c)) %>% 
+  left_join(highest_alpha_closed %>%
+              select(fish_id, alpha_close_mgo2_kg_h_kPa), by = "fish_id") %>% 
+  rename(highest_alpha_closed = alpha_close_mgo2_kg_h_kPa) %>% 
+  ungroup()
+
+```
+
+## Combining Alpha Values
+
+-   This section will combine alpha values from the intermittent and closed portions of the experiment
+
+-   \*Note: not all fish will have both values because some died during the intermittent experiment
+
+    ```{r}
+    #creating new data frame, joining both alpha values
+    alpha_values_combined <- alpha_values_int %>% 
+      left_join(alpha_values_closed %>% 
+                  select(fish_id, avg_alpha_closed, avg_temp_closed),
+                by = "fish_id")
+
+    # calculate difference between alpha_closed and alpha_int
+    # avg temp values of closed and int values, can do a simple avg because there are equal # of values in closed and int
+    alpha_values_combined <- alpha_values_combined %>% 
+      mutate(alpha_diff_avg = avg_alpha_int -avg_alpha_closed,
+             temp_avg = ((avg_temp_closed + avg_temp_int)/2)) %>% 
+      select(-c(avg_temp_int, avg_temp_closed))
+    ```
+
+## Tidying the Post-Mortem data frame 
+
+-   Here we are looking at other variables and interactions
+
+-   Lets start by looking at the post mortem data
+
+    -   condition factor (CF)
+
+    -    hepatosomatic index (HSI)
+
+    -   \% tissue and liver dry weight
+
+    ```{r}
+    # Reading and naming data frame
+    post_mort <- read.csv("meta_postmort.csv")
+
+    # add relevant columns to the combined df
+    alpha_values_combined <- alpha_values_combined %>% 
+      left_join(post_mort %>% 
+                  select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g, fish_mort_pcrit),
+                by = "fish_id")
+
+    # removing fish that died during pcrit trial
+    # a total of 10 fish removed, 2 were already removed due to acclimation flag
+    alpha_values_combined <- alpha_values_combined %>% 
+      filter(fish_mort_pcrit != "Y")
+
+
+    #adding date to do some exploratory plotting
+    alpha_values_combined <- alpha_values_combined %>% 
+      left_join(highest_alpha_int %>% 
+                  select(fish_id, datetime),
+                by = "fish_id") %>% 
+      mutate(date = as.Date(datetime,)) %>% 
+      select(-datetime)
+    ```
+
+# Exploratory Data Analysis
+
+## T-Test
+
+-   Here we are going to run a t-test with avg alpha_int and avg_alpha_closed
+
+-   This will tell us if the two values are different, essentially calculating the difference between them
+
+```{r}
+# running t-test with avg alpha_int and avg_alpha_closed
+ttest <- alpha_values_combined %>% 
+  with(t.test(avg_alpha_int, avg_alpha_closed, paired = TRUE, na.action = na.omit))
+print(ttest)
+
+# avg_alpha_int is statistically different than avg_alpha_closed
+# mean difference 4.48
+# therefore we should use the alpha values from the intermittent experiment
+```
+
+## Checking if Data are Normally Distributed
+
+```{r}
+shapiro.test(alpha_values_combined$alpha_diff_avg)
+qqPlot(alpha_values_combined$alpha_diff_avg)
+```
+
+## Producing Plot of Pairwise Correlations Among Predictors
+
+```{r}
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y,use = "all.obs",method = "spearman"))
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste0(prefix, txt)
+  if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt) }
+
+
+temp <- alpha_values_combined %>%
+  filter(!is.na(alpha_diff_avg)) %>%
+  ungroup() %>%
+  mutate(ww_log = log(posttrial_wet_weight_g)) %>%
+  select(ww_log,temp_avg)
+
+# plot correlations
+pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
+      gap=0, row1attop=FALSE)
+```
+
+# Explanatory Data Analysis
