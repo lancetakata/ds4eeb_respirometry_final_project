@@ -13,8 +13,8 @@
 
 ## Alpha:
 * Alpha is the maximum metabolic rate of an individual at a given temperature and oxygen level.
-** Alpha intermittent ("alphaint") is the maximum oxygen supply capacity recorded during intermittent respirometry.
-** Alpha closed ("alphaclose") is the maximum oxygen supply capacity recorded during closed respirometry.
+  * Alpha intermittent ("alphaint") is the maximum oxygen supply capacity recorded during intermittent respirometry.
+  * Alpha closed ("alphaclose") is the maximum oxygen supply capacity recorded during closed respirometry.
 
 # Alpha Intermittent data:
 * fish_id: an identifying number specific to each individual fish.
