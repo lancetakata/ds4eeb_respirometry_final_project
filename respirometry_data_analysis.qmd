@@ -228,6 +228,12 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
       gap=0, row1attop=FALSE)
 ```
 
+## Releveling Lifestage so that Saltwater Subadult is the first reference 
+
+-   Here we are releveling the SS stage (saltwater subadult) to be the first reference
+
+-   This does not change the model but changes how we read the output, comparing each stage to the saltwater subadult first.
+
 ```{r}
 #relevel lifestage so that SS is the first reference
 alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "SS", "SJ")
@@ -236,9 +242,15 @@ model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
 model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)
 model3 <- lm(alpha_diff_avg ~ lifestage + temp_avg + t_perc_dw +
                lifestage:t_perc_dw + lifestage:temp_avg, alpha_values_combined)
+```
 
-##AIC evaluation####
+## AIC/BIC Evaluation and Summary Statistics
 
+-   Computing the ACI and BIC to evaluate model complexity and fit
+
+-   The ACI provides an estimate of prediction error, while the BIC also is based on the likelihood function but has a stronger penalty for model complexity
+
+```{r}
 #df that shows AIC and BIC results
 evaluation <- data.frame(AIC(model1, model2, model3)) %>%
   mutate(BIC = BIC(model1, model2, model3)$BIC) %>%
@@ -248,21 +260,32 @@ evaluation <- data.frame(AIC(model1, model2, model3)) %>%
 plot(model3)
 Anova(model3)
 summary(model3)
+```
 
+## Visualizing the Model
 
+-   This is a visualization of the model, as separated by life stage
+
+```{r}
 #visualize the model
 library(visreg)
 visreg(model3, "temp_avg", by = "lifestage",)
+```
 
+## New Data Frame with all Combinations of Lifestage, Temp, and posttrial_wet_weight
 
+```{r}
 # creating new data of all combinations of lifestage, temp, and posttrial_wet_weight
 newdata <- expand.grid(lifestage = unique(alpha_values_combined$lifestage),
                        temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
                                       max(alpha_values_combined$temp_avg,na.rm=T),length.out=100),
                        t_perc_dw = mean(alpha_values_combined$t_perc_dw)
                        )
+```
 
+## Testing Model3 on the New Data
 
+```{r}
 # how does model3 predict this new data
 prdata <- predict(model3,newdata = newdata, se.fit = T)
 
@@ -282,8 +305,11 @@ newdata %>%
 newdata %>% 
   ggplot(aes(temp_avg, fit, colour = lifestage)) +
     geom_point()
+```
 
-# Plots -------------------------------------------------------------------
+## Plots
+
+```{r}
 ###### Plots of alpha by o2 and lifestage  ######
 
 #plot alpha vs temp by lifestage
@@ -295,6 +321,16 @@ ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = l
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
   scale_color_brewer(palette = "Set1")
+
+#plot smr vs temp by lifestage
+ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = lm) +
+  labs(
+    title = "SMR vs Temperature by lifestage",
+    x = "Temperature (°C)",
+    y = "SMR (mgO2kg-1h)") +
+  scale_color_brewer(palette = "Set2")
 
 
 #plot alpha vs o2 by lifestage
@@ -352,9 +388,11 @@ ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = lif
   scale_color_brewer(palette = "Set2") +
   geom_smooth(method = lm)
 
+```
 
-###### Summary statistics ######
+## Summary Statistics
 
+```{r}
 #count of each intermittent completed
 highest_alpha_int %>% 
   filter(salinity == "Freshwater") %>% 
