@@ -1,3 +1,7 @@
+#install.packages(respirometry)
+#install.packages(car)
+#install.packages(visreg)
+
 library(tidyverse)
 library(respirometry)
 library(stats)
@@ -9,6 +13,7 @@ library(lubridate)
 ### OBJ 1: Determine which alpha values are most significant between the intermittent and closed experiments
 ### OBJ 2: Determine the relevant variables driving differences between alpha values of intermittent and closed experiments
 
+### OBJ 3: Determine the driving variables for alpha values
 
 # Alpha Int ---------------------------------------------------------------
 
