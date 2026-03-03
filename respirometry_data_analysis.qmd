@@ -37,7 +37,7 @@ alpha_int <- alpha_int %>%
 # use lubridate on datetime column
 alpha_int$datetime <- ymd_hms(alpha_int$datetime)
 
-# use dates of exp to determine if saltwater juvenile"SJ", freshwater juvenile"FJ" or subadult saltwater"SS"
+# use dates of exp to determine if saltwater juvenile "SJ", freshwater juvenile "FJ" or subadult saltwater "SS"
 sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
 fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
 alpha_int <- alpha_int %>%
@@ -65,7 +65,8 @@ alpha_values_int<- alpha_int %>%
   summarise(avg_alpha_int= mean(alpha_int_mgo2_kg_h_kPa),
             avg_temp_int = mean(temp_c)) %>% 
   left_join(highest_alpha_int %>%
-              select(fish_id, alpha_int_mgo2_kg_h_kPa,lifestage), by = "fish_id") %>% 
+            select(fish_id, alpha_int_mgo2_kg_h_kPa,lifestage),
+            by = "fish_id") %>% 
   rename(highest_alpha_int = alpha_int_mgo2_kg_h_kPa) %>% 
   ungroup()
 
@@ -84,8 +85,8 @@ alpha_closed <- read.csv("alpha_close.csv")
 #add in salinity
 alpha_closed <- alpha_closed %>%
   mutate(salinity = case_when(
-    sal_ppt == 35 ~ "Saltwater",
-    sal_ppt == 0  ~ "Freshwater"))
+          sal_ppt == 35 ~ "Saltwater",
+          sal_ppt == 0  ~ "Freshwater"))
 
 #keep highest alpha value
 #this is to test if there is any difference between the single highest and the avg of the highest 3 values
@@ -97,10 +98,11 @@ highest_alpha_closed <- alpha_closed %>%
 #avg alpha value and make new df with both avg and highest values
 alpha_values_closed<- alpha_closed %>% 
   group_by(fish_id, salinity) %>% 
-  summarise(avg_alpha_closed= mean(alpha_close_mgo2_kg_h_kPa),
+  summarise(avg_alpha_closed = mean(alpha_close_mgo2_kg_h_kPa),
             avg_temp_closed = mean(temp_c)) %>% 
   left_join(highest_alpha_closed %>%
-              select(fish_id, alpha_close_mgo2_kg_h_kPa), by = "fish_id") %>% 
+              select(fish_id, alpha_close_mgo2_kg_h_kPa),
+                     by = "fish_id") %>% 
   rename(highest_alpha_closed = alpha_close_mgo2_kg_h_kPa) %>% 
   ungroup()
 
@@ -116,18 +118,19 @@ alpha_values_closed<- alpha_closed %>%
     #creating new data frame, joining both alpha values
     alpha_values_combined <- alpha_values_int %>% 
       left_join(alpha_values_closed %>% 
-                  select(fish_id, avg_alpha_closed, avg_temp_closed),
+                select(fish_id, avg_alpha_closed, avg_temp_closed),
                 by = "fish_id")
 
     # calculate difference between alpha_closed and alpha_int
     # avg temp values of closed and int values, can do a simple avg because there are equal # of values in closed and int
+
     alpha_values_combined <- alpha_values_combined %>% 
       mutate(alpha_diff_avg = avg_alpha_int -avg_alpha_closed,
              temp_avg = ((avg_temp_closed + avg_temp_int)/2)) %>% 
       select(-c(avg_temp_int, avg_temp_closed))
     ```
 
-## Tidying the Post-Mortem data frame 
+## Tidying the Post-Mortem data frame
 
 -   Here we are looking at other variables and interactions
 
@@ -135,7 +138,9 @@ alpha_values_closed<- alpha_closed %>%
 
     -   condition factor (CF)
 
-    -    hepatosomatic index (HSI)
+    -   hepatosomatic index (HSI)
+
+        -   Sub adult fish do not have an HSI value
 
     -   \% tissue and liver dry weight
 
@@ -155,12 +160,12 @@ alpha_values_closed<- alpha_closed %>%
       filter(fish_mort_pcrit != "Y")
 
 
-    #adding date to do some exploratory plotting
+    # adding date to do some exploratory plotting
     alpha_values_combined <- alpha_values_combined %>% 
       left_join(highest_alpha_int %>% 
-                  select(fish_id, datetime),
+                select(fish_id, datetime),
                 by = "fish_id") %>% 
-      mutate(date = as.Date(datetime,)) %>% 
+      mutate(date = as.Date(datetime)) %>% 
       select(-datetime)
     ```
 
@@ -174,25 +179,34 @@ alpha_values_closed<- alpha_closed %>%
 
 ```{r}
 # running t-test with avg alpha_int and avg_alpha_closed
+
 ttest <- alpha_values_combined %>% 
   with(t.test(avg_alpha_int, avg_alpha_closed, paired = TRUE, na.action = na.omit))
 print(ttest)
 
 # avg_alpha_int is statistically different than avg_alpha_closed
-# mean difference 4.48
-# therefore we should use the alpha values from the intermittent experiment
+# mean difference: 4.48
+# therefore we will use the alpha values from the intermittent experiment
 ```
 
 ## Checking if Data are Normally Distributed
+
+Shapiro test will tell us if the data is normally distributed. Null hypothesis that is that data is normally distributed. Would be confirmed by a p \< 0.05.
+
+qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds.
 
 ```{r}
 shapiro.test(alpha_values_combined$alpha_diff_avg)
 qqPlot(alpha_values_combined$alpha_diff_avg)
 ```
 
+From the Shapiro test, we do not have normally distributed data. However, this is only due to two outlying data points so we will go ahead and assume a normal distribution.
+
 ## Producing Plot of Pairwise Correlations Among Predictors
 
 ```{r}
+# Need to ask Ben how this works
+
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
   usr <- par("usr"); on.exit(par(usr))
   par(usr = c(0, 1, 0, 1))
@@ -202,14 +216,14 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
   if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
   text(0.5, 0.5, txt) }
 
-
+# create temporary df that includes a log normalized wet weight
 temp <- alpha_values_combined %>%
   filter(!is.na(alpha_diff_avg)) %>%
   ungroup() %>%
   mutate(ww_log = log(posttrial_wet_weight_g)) %>%
   select(ww_log,temp_avg)
 
-# plot correlations
+# plot correlations between log of wet weight and temperature
 pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
       gap=0, row1attop=FALSE)
 ```
@@ -281,16 +295,6 @@ ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = l
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
   scale_color_brewer(palette = "Set1")
-
-#plot smr vs temp by lifestage
-ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(method = lm) +
-  labs(
-    title = "SMR vs Temperature by lifestage",
-    x = "Temperature (°C)",
-    y = "SMR (mgO2kg-1h)") +
-  scale_color_brewer(palette = "Set2")
 
 
 #plot alpha vs o2 by lifestage
