@@ -214,4 +214,159 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
       gap=0, row1attop=FALSE)
 ```
 
+```{r}
+#relevel lifestage so that SS is the first reference
+alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "SS", "SJ")
+
+model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
+model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)
+model3 <- lm(alpha_diff_avg ~ lifestage + temp_avg + t_perc_dw +
+               lifestage:t_perc_dw + lifestage:temp_avg, alpha_values_combined)
+
+##AIC evaluation####
+
+#df that shows AIC and BIC results
+evaluation <- data.frame(AIC(model1, model2, model3)) %>%
+  mutate(BIC = BIC(model1, model2, model3)$BIC) %>%
+  arrange(BIC)
+
+
+plot(model3)
+Anova(model3)
+summary(model3)
+
+
+#visualize the model
+library(visreg)
+visreg(model3, "temp_avg", by = "lifestage",)
+
+
+# creating new data of all combinations of lifestage, temp, and posttrial_wet_weight
+newdata <- expand.grid(lifestage = unique(alpha_values_combined$lifestage),
+                       temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
+                                      max(alpha_values_combined$temp_avg,na.rm=T),length.out=100),
+                       t_perc_dw = mean(alpha_values_combined$t_perc_dw)
+                       )
+
+
+# how does model3 predict this new data
+prdata <- predict(model3,newdata = newdata, se.fit = T)
+
+#creating plot of the new data fit
+newdata$fit <- prdata$fit
+newdata$lcl <- prdata$fit - prdata$se.fit*2 #lower cl, -fit x2
+newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
+
+#plot of this fit with the ucl and lcl
+newdata %>%
+  ggplot(aes(temp_avg,fit,fill=lifestage)) +
+    geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,col=lifestage)) +
+    geom_line(aes(col=lifestage)) +
+    geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
+
+
+newdata %>% 
+  ggplot(aes(temp_avg, fit, colour = lifestage)) +
+    geom_point()
+
+# Plots -------------------------------------------------------------------
+###### Plots of alpha by o2 and lifestage  ######
+
+#plot alpha vs temp by lifestage
+ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = lifestage)) +
+  geom_point(alpha = 0.7)+
+  labs(
+    title = "Alpha vs Temperature by Lifestage",
+    x = "Temperature (°C)",
+    y = "Alpha (mgO2kg-1h-1kPa-1)") +
+  geom_smooth(method = lm) +
+  scale_color_brewer(palette = "Set1")
+
+#plot smr vs temp by lifestage
+ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = lm) +
+  labs(
+    title = "SMR vs Temperature by lifestage",
+    x = "Temperature (°C)",
+    y = "SMR (mgO2kg-1h)") +
+  scale_color_brewer(palette = "Set2")
+
+
+#plot alpha vs o2 by lifestage
+ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o2_mgl)) +
+  geom_point(alpha = 0.6) +
+  scale_color_gradient(low = "blue", high = "red")+
+  facet_wrap(~lifestage) +
+  labs(
+    title = "Alpha vs DO by Lifestage",
+    x = "O2 mg/L",
+    y = "Alpha (mgO2kg-1h-1kPa-1)") +
+  theme_bw()
+
+# alpha diff vs temp by lifestage
+ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
+#plot alpha diff by mass
+alpha_values_combined %>% 
+  ggplot(aes(x = log(posttrial_wet_weight_g), y = alpha_diff_avg, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
+
+###### Post mortem plots ######
+
+#plot alpha diff by hsi
+alpha_values_combined %>% 
+  filter(fish_id != "FV077") %>% 
+  ggplot(aes(x = hsi, y = alpha_diff_avg, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
+#plot alpha diff by cf
+alpha_values_combined %>% 
+  filter(fish_id != "FV091") %>% 
+  ggplot(aes(x = cf, y = alpha_diff_avg, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
+#plot alpha diff by l %dw
+ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
+#plot alpha diff by tissue %dw
+ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = lifestage)) +
+  geom_point(alpha = 0.7) +
+  scale_color_brewer(palette = "Set2") +
+  geom_smooth(method = lm)
+
+
+###### Summary statistics ######
+
+#count of each intermittent completed
+highest_alpha_int %>% 
+  filter(salinity == "Freshwater") %>% 
+  count()
+
+highest_alpha_int %>% 
+  filter(salinity == "Saltwater") %>% 
+  count()
+
+alpha_values_closed %>% 
+  filter(salinity == "Freshwater") %>% 
+  count()
+
+alpha_values_closed %>% 
+  filter(salinity == "Saltwater") %>% 
+  count()
+```
+
 # Explanatory Data Analysis
