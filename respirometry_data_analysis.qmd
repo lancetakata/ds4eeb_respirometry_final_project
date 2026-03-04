@@ -331,13 +331,15 @@ Anova(model4)
 summary(model4)
 ```
 
--   From the summary we can see that life stage has a larger impact on the intercept of freshwater smolts compared to the subadults, than on the saltwater smolts.
+-   AIC and BIC says we should use model4
 
--   The alpha difference increases by 0.61 for every degree of Celsius increase.
+-   From the summary we can see that life stage has a larger impact on the intercept of freshwater smolts compared to the subadults, than on the saltwater smolts
 
--   alpha difference also increases by 75 .47 for every tissue % dry weight percent increase.
+-   The alpha difference increases by 0.61 for every degree of Celsius increase
 
--   The interactive effects of lifestage and temp are only weakly correlated though.
+-   alpha difference also increases by 75 .47 for every tissue % dry weight percent increase
+
+-   The interactive effects of lifestage and temp are only weakly correlated though
 
 ## Visualizing the Model
 
@@ -366,7 +368,7 @@ newdata <- expand.grid(lifestage = unique(alpha_values_combined$lifestage),
 ## Testing Model4 on the New Data
 
 ```{r}
-# how does model3 predict this new data
+# how does model4 predict this new data
 prdata <- predict(model4,newdata = newdata, se.fit = T)
 
 #creating plot of the new data fit
@@ -396,13 +398,17 @@ newdata %>%
 
 We expect that alpha will increase with temperature and temparature will have a greater impact at the transitional saltwater lifestages (saltwater smolt and subadult).
 
--   First we have to do some data tidying since we will only use the intermittent alpha values.
+-   First we have to do some data tidying after we load in the data
 
 ```{r}
+#load in libraries
+library(tidyverse)
+
 #read in relevant datafiles
 alpha_int <- read.csv("alpha_int.csv")
 
 #### the following code is data tidying and may be duplicative ####
+
 
 
 #add column "Salinity" identifying if a fish was saltwater or freshwater
@@ -441,7 +447,7 @@ alpha_values<- alpha_int %>%
   ungroup()
 ```
 
--   Here we read in the post mortem data and then combine it with our alpha values df.
+-   Here we read in the post mortem data and then combine it with our alpha values df
 
 ```{r}
 post_mort <- read.csv("meta_postmort.csv")
@@ -455,9 +461,9 @@ alpha_values <- alpha_values %>%
 
 ## Plotting
 
-Here we will plot potentially explanatory variables for alpha values, most interesting is the life stage and temperature. We will also look at the post mortem data to see if they have any correlation.
+Here we will plot potentially explanatory variables for alpha values, most interesting is the life stage and temperature. We will also look at the post mortem data to see if they have any correlation
 
-Plots include the following variables: temperature, lifestage, condition factor, liver % dry weight, and tissue % dry weight.
+Plots include the following variables: temperature, lifestage, condition factor, liver % dry weight, and tissue % dry weight
 
 ```{r}
 #plot alpha vs temp by lifestage
@@ -523,9 +529,9 @@ For the scope of this project we will stick to temperature and lifestage.
 
 ## Checking if Data are Normally Distributed
 
--   Shapiro test will tell us if the data is normally distributed. Null hypothesis is that data is normally distributed. Would be confirmed by a p \< 0.05.
+-   Shapiro test will tell us if the data is normally distributed. Null hypothesis is that data is normally distributed. Would be confirmed by a p \< 0.05
 
--   qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds.
+-   qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds
 
 ```{r}
 #test for normalcy
@@ -553,7 +559,7 @@ evaluation <- data.frame(AIC(lm1, lm2, lm3, lm4)) %>%
   arrange(BIC)
 ```
 
--   From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature.
+-   From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature
 
 -   Now lets look at summary statistics about this model
 
@@ -564,9 +570,9 @@ plot(lm4)
 Anova(lm4)
 ```
 
--   We can see a good distribution across our four plots and the Anova shows that we have significance of our variables.
+-   We can see a good distribution across our four plots and the Anova shows that we have significance of our variables
 
--   Let's look at the summary to understand the significance.
+-   Let's look at the summary to understand the significance
 
 ```{r}
 summary(lm4)
@@ -596,9 +602,9 @@ We can see that the slope of saltwater smolts is the steepest meaning that tempe
 
 -   We can look at predicted data to help us understand our model
 
--   First we create new data based based on the range of data we used to create our predicted model. Then we will use the model to predict using that data.
+-   First we create new data based based on the range of data we used to create our predicted model, then we will use the model to predict using that data
 
--   Note that for these plots the line represents the predicted trend, and the points represent the actual data, this allows us to see how well our model aligns with the actual data.
+-   Note that for these plots the line represents the predicted trend, and the points represent the actual data, this allows us to see how well our model aligns with the actual data
 
 ```{r}
 # creating new data of all combinations of lifestage and temp
@@ -637,7 +643,7 @@ newdata %>%
 
 ## Visualizing Variation
 
--   Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages.
+-   Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages
 
 -   Note that this is done with the predicted data, not the actual data
 
