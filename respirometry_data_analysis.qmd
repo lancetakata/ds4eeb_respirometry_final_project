@@ -196,7 +196,7 @@ print(ttest)
 ## Plots
 
 -   Here we are creating exploratory plots to determine patterns and relationships and select explanatory outputs
--   We will look at plots of temp, lifestage, hsi, cf, liver % dry weight, and tissue % dry weight to see if there are interesting patterns.
+-   We will look at plots of temp, lifestage, hsi, cf, liver % dry weight, and tissue % dry weight to see if there are interesting patterns
 
 ```{r}
 # alpha diff vs temp by lifestage
@@ -244,7 +244,7 @@ ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = lif
   geom_smooth(method = lm)
 ```
 
--   Temperature, lifestage and tissue % dry weight seem to be the most interesting variables so lets look at those.
+-   Temperature, lifestage and tissue % dry weight seem to be the most interesting variables so lets look at those
 
 ## Checking if Data are Normally Distributed
 
@@ -297,7 +297,7 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
 
 -   Here we are releveling the subadult lifestage to be the first reference
 
--   This does not change the model but changes how we read the output, comparing each stage to the subadults first.
+-   This does not change the model but changes how we read the output, comparing each stage to the subadults first
 
 ```{r}
 #relevel lifestage so that subadult is the first reference
@@ -394,16 +394,13 @@ newdata %>%
 
 ## Alpha Analysis
 
-**Obj 3**: What is the variation of alpha values across temperature and lifestage
+What is the variation of alpha values across temperature and lifestage?
 
 We expect that alpha will increase with temperature and temparature will have a greater impact at the transitional saltwater lifestages (saltwater smolt and subadult).
 
--   First we have to do some data tidying after we load in the data
+-   First we have to do some data tidying after we load in the data since we will be only using the intermittent alpha data
 
 ```{r}
-#load in libraries
-library(tidyverse)
-
 #read in relevant datafiles
 alpha_int <- read.csv("alpha_int.csv")
 
