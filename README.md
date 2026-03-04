@@ -27,3 +27,11 @@ Maximum oxygen supply capacity recorded during intermittent respirometry (alphai
 **Alphaclose**: *alpha_close.csv*
 
 Maximum oxygen supply capacity recorded during closed respirometry (alphaclose) and associated experimental conditions. For use in data analysis. Includes identifying information (fish id), experimental conditions (date and time of alphaclose, salinity, oxygen concentration, temperature, atmospheric pressure), and alphaclose. Note that there are 3 values per fish – these values can be averaged to produce a final alphaclose. Also note that these data include both fish that completed the overnight intermittent trial (n=110) and the two fish (FV043 and FV048) that were a part of the experiment where windows updated and closed AutoResp during the overnight period. These two happened to be in the flush phase, so closed respirometry was run for them the following morning. They can be removed prior to analysis, but are here for now.
+
+**Respirometry data analysis**: *respirometry_data_analysis.qmd*
+
+File containing the data analysis of respirometry data. It contains a workflow to determine which alpha values to use from the intermittent and closed data sets. It also contains a workflow to better understand the variation in alpha values seen.
+
+**Respirometry working script:** *respirometry_working_script.r*
+
+This is an rscript version of the respirometry_data_analysis.qmd it has fewer annotations and may have slightly varied code.
