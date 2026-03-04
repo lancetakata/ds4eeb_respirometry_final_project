@@ -195,7 +195,7 @@ print(ttest)
 
 -   Now that we know we have different data between the intermittent and closed experiments we can look at possible causes for that difference
 
-## Plots
+## Plotting
 
 -   Here we are creating exploratory plots to determine patterns and relationships and select explanatory outputs
 -   We will look at plots of temp, lifestage, hsi, cf, liver % dry weight, and tissue % dry weight to see if there are interesting patterns
@@ -305,6 +305,7 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
 #relevel lifestage so that subadult is the first reference
 alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "subadult", "saltwater smolt")
 
+#run models with different amounts of predictors and interactive/additive effects to determine which is best fit/most explanatory
 model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
 model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg,
              alpha_values_combined)
@@ -333,7 +334,7 @@ Anova(model4)
 summary(model4)
 ```
 
--   AIC and BIC says we should use model4
+-   AIC and BIC results indicate that we should use model4
 
 -   From the summary we can see that life stage has a larger impact on the intercept of freshwater smolts compared to the subadults, than on the saltwater smolts
 
