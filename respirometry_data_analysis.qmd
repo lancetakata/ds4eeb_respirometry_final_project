@@ -191,9 +191,9 @@ print(ttest)
 
 ## Checking if Data are Normally Distributed
 
-Shapiro test will tell us if the data is normally distributed. Null hypothesis that is that data is normally distributed. Would be confirmed by a p \< 0.05.
+-   Shapiro test will tell us if the data is normally distributed. Null hypothesis that is that data is normally distributed. Would be confirmed by a p \< 0.05.
 
-qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds.
+-   qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds.
 
 ```{r}
 shapiro.test(alpha_values_combined$alpha_diff_avg)
@@ -238,6 +238,7 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
 #relevel lifestage so that SS is the first reference
 alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "subadult", "saltwater smolt")
 
+#confused here on why we ran three models but only used model3, I understand that model3 has  more variables so did we deem it best fit/explanatory for the data, if so I think we need to run the model summary statistics here and have an explanation for why we choise model3, or will we leave all three models here (explaining why we will only choose model3 moving forward) and then put model3 in the explanatory section
 model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
 model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)
 model3 <- lm(alpha_diff_avg ~ lifestage + temp_avg + t_perc_dw +
@@ -271,6 +272,8 @@ summary(model3)
 library(visreg)
 visreg(model3, "temp_avg", by = "lifestage",)
 ```
+
+-   explain conclusions from plots
 
 ## New Data Frame with all Combinations of Lifestage, Temp, and tissue % dry weight
 
@@ -309,79 +312,110 @@ newdata %>%
     geom_point()
 ```
 
+-   need to explain here what our conclusions are from these plots
+
 ## Plots
 
 -   Here we are creating exploratory plots to determine patterns and relationships and select explanatory outputs
 
-```{r}
-###### Plots of alpha by o2 and lifestage  ######
+### Plots of alpha by o2 and lifestage
 
-#plot alpha vs temp by lifestage
-ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = lifestage)) +
-  geom_point(alpha = 0.7)+
-  labs(
-    title = "Alpha vs Temperature by Lifestage",
-    x = "Temperature (°C)",
-    y = "Alpha (mgO2kg-1h-1kPa-1)") +
-  geom_smooth(method = lm) +
-  scale_color_brewer(palette = "Set1")
+-   Plot alpha vs temp by lifestage
 
-#plot alpha vs o2 by lifestage
-ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o2_mgl)) +
-  geom_point(alpha = 0.6) +
-  scale_color_gradient(low = "blue", high = "red")+
-  facet_wrap(~lifestage) +
-  labs(
-    title = "Alpha vs DO by Lifestage",
-    x = "O2 mg/L",
-    y = "Alpha (mgO2kg-1h-1kPa-1)") +
-  theme_bw()
+    ```{r}
+    #plot alpha vs temp by lifestage
+    ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = lifestage)) +
+      geom_point(alpha = 0.7)+
+      labs(
+        title = "Alpha vs Temperature by Lifestage",
+        x = "Temperature (°C)",
+        y = "Alpha (mgO2kg-1h-1kPa-1)") +
+      geom_smooth(method = lm) +
+      scale_color_brewer(palette = "Set1")
+    ```
 
-# alpha diff vs temp by lifestage
-ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2") +
-  geom_smooth(method = lm)
+-   Plot alpha vs o2 by lifestage
 
-#plot alpha diff by mass
-alpha_values_combined %>% 
-  ggplot(aes(x = log(posttrial_wet_weight_g), y = alpha_diff_avg, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2") +
-  geom_smooth(method = lm)
+    ```{r}
+    #plot alpha vs o2 by lifestage
+    ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o2_mgl)) +
+      geom_point(alpha = 0.6) +
+      scale_color_gradient(low = "blue", high = "red")+
+      facet_wrap(~lifestage) +
+      labs(
+        title = "Alpha vs DO by Lifestage",
+        x = "O2 mg/L",
+        y = "Alpha (mgO2kg-1h-1kPa-1)") +
+      theme_bw()
 
+    ```
 
-###### Post mortem plots ######
+-   Plot alpha difference vs temp by lifestage
 
-#plot alpha diff by hsi
-alpha_values_combined %>% 
-  filter(fish_id != "FV077") %>% 
-  ggplot(aes(x = hsi, y = alpha_diff_avg, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2") +
-  geom_smooth(method = lm)
+    ```{r}
+    # alpha diff vs temp by lifestage
+    ggplot(alpha_values_combined, aes(x = temp_avg, y = alpha_diff_avg, color = lifestage)) +
+      geom_point(alpha = 0.7) +
+      scale_color_brewer(palette = "Set2") +
+      geom_smooth(method = lm)
+    ```
 
-#plot alpha diff by cf
-alpha_values_combined %>% 
-  filter(fish_id != "FV091") %>% 
-  ggplot(aes(x = cf, y = alpha_diff_avg, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2") +
-  geom_smooth(method = lm)
+-   plot alpha difference by mass
 
-#plot alpha diff by l %dw
-ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2") +
-  geom_smooth(method = lm)
+    ```{r}
+    #plot alpha diff by mass
+    alpha_values_combined %>% 
+      ggplot(aes(x = log(posttrial_wet_weight_g), y = alpha_diff_avg, color = lifestage)) +
+      geom_point(alpha = 0.7) +
+      scale_color_brewer(palette = "Set2") +
+      geom_smooth(method = lm)
+    ```
 
-#plot alpha diff by tissue %dw
-ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  scale_color_brewer(palette = "Set2") +
-  geom_smooth(method = lm)
+### Post-mortem plots
 
-```
+-   plot alpha difference by hsi (heposomatic index)
+
+    ```{r}
+    #plot alpha diff by hsi
+    alpha_values_combined %>% 
+      filter(fish_id != "FV077") %>% 
+      ggplot(aes(x = hsi, y = alpha_diff_avg, color = lifestage)) +
+      geom_point(alpha = 0.7) +
+      scale_color_brewer(palette = "Set2") +
+      geom_smooth(method = lm)
+    ```
+
+-   plot alpha difference by cf (condition factor)
+
+    ```{r}
+    #plot alpha diff by cf
+    alpha_values_combined %>% 
+      filter(fish_id != "FV091") %>% 
+      ggplot(aes(x = cf, y = alpha_diff_avg, color = lifestage)) +
+      geom_point(alpha = 0.7) +
+      scale_color_brewer(palette = "Set2") +
+      geom_smooth(method = lm)
+    ```
+
+-   plot alpha difference by lliver % dry weight
+
+    ```{r}
+    #plot alpha diff by l %dw
+    ggplot(alpha_values_combined, aes(x = l_perc_dw, y = alpha_diff_avg, color = lifestage)) +
+      geom_point(alpha = 0.7) +
+      scale_color_brewer(palette = "Set2") +
+      geom_smooth(method = lm)
+    ```
+
+-   plot alpha difference by tissue % dry weight
+
+    ```{r}
+    #plot alpha diff by tissue %dw
+    ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = lifestage)) +
+      geom_point(alpha = 0.7) +
+      scale_color_brewer(palette = "Set2") +
+      geom_smooth(method = lm)
+    ```
 
 ## Summary Statistics
 
