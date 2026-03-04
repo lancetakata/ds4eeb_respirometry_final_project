@@ -171,9 +171,11 @@ alpha_values_closed<- alpha_closed %>%
 
 # Exploratory Data Analysis
 
+This section of data analysis will be determining if there is a difference between the alpha_int and alpha_closed values. We want to determine which data set to use.
+
 ## T-Test
 
--   Here we are going to run a t-test with avg alpha_int and avg_alpha_closed
+-   Here we are going to run a t-test with avg_alpha_int and avg_alpha_closed
 
 -   This will tell us if the two values are different by calculating the difference between them
 
