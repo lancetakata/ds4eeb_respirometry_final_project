@@ -44,7 +44,6 @@ alpha_int$lifestage <- as.factor(alpha_int$lifestage)
 
 
 
-
 #keep only the highest alpha value
 #this is to test if there is any difference between the single highest and the avg of the highest 3 values
 highest_alpha_int <- alpha_int %>%

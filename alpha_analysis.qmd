@@ -204,7 +204,7 @@ library(visreg)
 visreg(lm4, "avg_temp", by = "lifestage",)
 ```
 
-We can see that the slope of "SJ" saltwater smolts is the steepest meaning that temperature has a greater impact on it than the other lifestages. Subadult fish also have an increased slope compared to freshwater smolts, although not as steep as saltwater smolts.
+We can see that the slope of saltwater smolts is the steepest meaning that temperature has a greater impact on it than the other lifestages. Subadult fish also have an increased slope compared to freshwater smolts, although not as steep as saltwater smolts so it is also impacted by temperature more than the freshwater smolts.
 
 ## Predicting Data
 
@@ -261,13 +261,13 @@ newdata %>%
       theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Another plot of alpha y , life stage x-axis, facet wrapped by temperature(will actually use date). Using the actual data, will help visualize the range at each temperature.
+This is what it would look like with the actual data
 
 ```{r}
 alpha_values %>% 
-  ggplot(aes(lifestage, fit, colour = avg_temp)) +
+  ggplot(aes(lifestage, avg_alpha, colour = avg_temp)) +
     geom_point() +
     scale_color_gradient(name = "Temperature", low = "blue", high = "red") +
-    labs(x = "Life stage") +
-  facet_wrap(~avg_temp)
+      labs(title = "Alpha range", x = "Life stage", y = "alpha") +
+      theme(plot.title = element_text(hjust = 0.5))
 ```

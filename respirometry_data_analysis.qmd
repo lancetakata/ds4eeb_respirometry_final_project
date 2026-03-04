@@ -42,9 +42,9 @@ sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
 fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
 alpha_int <- alpha_int %>%
   mutate(lifestage = case_when(
-    datetime < sj_cutoff ~ "SJ",
-    datetime < fj_cutoff ~ "FJ",  # anything >= SJ cutoff but < FJ cutoff
-    TRUE ~ "SS"                   # everything else
+    datetime < sj_cutoff ~ "saltwater smolt",
+    datetime < fj_cutoff ~ "freshwater smolt",  # anything >= SJ cutoff but < FJ cutoff
+    TRUE ~ "subadult"                   # everything else
   )) 
 # change lifestage column to a factor
 alpha_int$lifestage <- as.factor(alpha_int$lifestage)
@@ -228,7 +228,7 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
       gap=0, row1attop=FALSE)
 ```
 
-## Releveling Lifestage so that Saltwater Subadult is the first reference 
+## Releveling Lifestage so that Saltwater Subadult is the first reference
 
 -   Here we are releveling the SS stage (saltwater subadult) to be the first reference
 
@@ -236,7 +236,7 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
 
 ```{r}
 #relevel lifestage so that SS is the first reference
-alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "SS", "SJ")
+alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "subadult", "saltwater smolt")
 
 model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
 model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)
@@ -325,17 +325,6 @@ ggplot(highest_alpha_int, aes(x = temp_c, y = alpha_int_mgo2_kg_h_kPa, color = l
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
   scale_color_brewer(palette = "Set1")
-
-#plot smr vs temp by lifestage
-ggplot(int, aes(x = temp_c, y = smr_mgo2_kg_h, color = lifestage)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(method = lm) +
-  labs(
-    title = "SMR vs Temperature by lifestage",
-    x = "Temperature (°C)",
-    y = "SMR (mgO2kg-1h)") +
-  scale_color_brewer(palette = "Set2")
-
 
 #plot alpha vs o2 by lifestage
 ggplot(highest_alpha_int, aes(x = o2_mgl, y = alpha_int_mgo2_kg_h_kPa, color = o2_mgl)) +
