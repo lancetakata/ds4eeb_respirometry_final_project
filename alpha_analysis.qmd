@@ -37,9 +37,9 @@ sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
 fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
 alpha_int <- alpha_int %>%
   mutate(lifestage = case_when(
-    datetime < sj_cutoff ~ "SJ",
-    datetime < fj_cutoff ~ "FJ",  # anything >= SJ cutoff but < FJ cutoff
-    TRUE ~ "SS"                   # everything else
+    datetime < sj_cutoff ~ "saltwater smolt",
+    datetime < fj_cutoff ~ "freshwater smolt",  # anything >= SJ cutoff but < FJ cutoff
+    TRUE ~ "subadult"                   # everything else
   )) 
 # change lifestage column to a factor
 alpha_int$lifestage <- as.factor(alpha_int$lifestage)
@@ -85,7 +85,7 @@ ggplot(alpha_values, aes(x = avg_temp, y = avg_alpha, color = lifestage)) +
     x = "Temperature (°C)",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
-  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater juvenile", "Saltwater smolt", "Saltwater subadult"))
+  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater smolt", "Saltwater smolt", "Subadult"))
   
 #plot alpha vs condition factor by lifestage
 ggplot(alpha_values, aes(x = cf, y = avg_alpha, color = lifestage)) +
@@ -95,7 +95,7 @@ ggplot(alpha_values, aes(x = cf, y = avg_alpha, color = lifestage)) +
     x = "Condition Factor",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
-  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater juvenile", "Saltwater smolt", "Saltwater subadult"))
+  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater smolt", "Saltwater smolt", "Subadult"))
 
 #plot alpha vs % liver dry weight 
 # higher % liver dry weight indicates decreased stress
@@ -106,7 +106,7 @@ ggplot(alpha_values, aes(x = l_perc_dw, y = avg_alpha, color = lifestage)) +
     x = "Liver % dry weight",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
-  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater juvenile", "Saltwater smolt", "Saltwater subadult"))
+  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater smolt", "Saltwater smolt", "Subadult"))
 
 
 # alpha vs % tissue dry weight
@@ -117,7 +117,7 @@ ggplot(alpha_values, aes(x = t_perc_dw, y = avg_alpha, color = lifestage)) +
     x = "% tissue dry weight",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
-  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater juvenile", "Saltwater smolt", "Saltwater subadult"))
+  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater smolt", "Saltwater smolt", "Subadult"))
 
 
 # plot alpha vs hsi, note there are no subadult's because they did not get an hsi value
@@ -129,7 +129,7 @@ ggplot(alpha_values, aes(x = hsi, y = avg_alpha, color = lifestage)) +
     x = "HSI",
     y = "Alpha (mgO2kg-1h-1kPa-1)") +
   geom_smooth(method = lm) +
-  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater juvenile", "Saltwater smolt", "Saltwater subadult"))
+  scale_color_brewer(palette = "Set2", name = "Lifestage", labels = c("Freshwater smolt", "Saltwater smolt", "Subadult"))
 ```
 
 **CF**: It looks like there could be some correlation between alpha and condition factor, but interestingly it is the opposite trend of what you would expect. Condition factor (CF)is a measure of a fish's mass/length, so a higher CF means that the fish is healthier. We would expect that a higher CF would mean a higher alpha because the fish is supposedly more physiologically fit.
@@ -201,7 +201,7 @@ The best way to understand this model is to visualize it
 ```{r}
 #visualize the model
 library(visreg)
-visreg(lm4, "avg_temp", by = "lifestage",)We
+visreg(lm4, "avg_temp", by = "lifestage",)
 ```
 
 We can see that the slope of "SJ" saltwater smolts is the steepest meaning that temperature has a greater impact on it than the other lifestages. Subadult fish also have an increased slope compared to freshwater smolts, although not as steep as saltwater smolts.
@@ -230,23 +230,44 @@ newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
 
 #plot of this fit with the ucl and lcl
 newdata %>%
-  ggplot(aes(avg_temp,fit, fill=lifestage)) +
+  ggplot(aes(avg_temp, fit, fill=lifestage)) +
     geom_point(data = alpha_values, aes(avg_temp,avg_alpha ,col = lifestage)) +
     geom_line(aes(col = lifestage)) +
     geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.3)
+
+# also make this same plot but facet wrapped so you can see the individual lifestages
+newdata %>%
+  ggplot(aes(avg_temp,fit, fill=lifestage)) +
+    geom_point(data = alpha_values, aes(avg_temp,avg_alpha ,col = lifestage)) +
+    geom_line(aes(col = lifestage)) +
+    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.3) +
+    facet_wrap(~lifestage)
+
 
 ```
 
 ## More visualization
 
-Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages
+Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages.
+
+Note that this is done with the predicted data, not the actual data
 
 ```{r}
 newdata %>% 
   ggplot(aes(lifestage, fit, colour = avg_temp)) +
-    geom_point()
-    
-    
+    geom_point() +
+    scale_color_gradient(name = "Temperature", low = "blue", high = "red") +
+      labs(title = "Predicted alpha", x = "Life stage", y = "Estimated alpha") +
+      theme(plot.title = element_text(hjust = 0.5))
 ```
 
-Another plot of alpha y , life stage x-axis, facet wrapped by temperature. Using the actual data. will help visualize the range at each temperature.
+Another plot of alpha y , life stage x-axis, facet wrapped by temperature(will actually use date). Using the actual data, will help visualize the range at each temperature.
+
+```{r}
+alpha_values %>% 
+  ggplot(aes(lifestage, fit, colour = avg_temp)) +
+    geom_point() +
+    scale_color_gradient(name = "Temperature", low = "blue", high = "red") +
+    labs(x = "Life stage") +
+  facet_wrap(~avg_temp)
+```
