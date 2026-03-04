@@ -246,7 +246,10 @@ ggplot(alpha_values_combined, aes(x = t_perc_dw, y = alpha_diff_avg, color = lif
   geom_smooth(method = lm)
 ```
 
--   Temperature, lifestage and tissue % dry weight seem to be the most interesting variables so lets look at those
+-   **Temperature,** In this plot we can see that subadult and saltwater smolts have a different slope than the freshwater smolts. This would be a good variable to investigate further.
+-   **Posttrial_wet_weight:** This looks like there is some variation between lifestages. Unfortunately, because there is no overlapping masses across lifestage it may be difficult to create a strong correlation.
+-   **CF:** Condition factor is also possibly a good variable, but again it uses mass which is not evenly distributed across all lifestages.
+-   **t_perc_dw:** We also see a large difference in slope between the freshwater lifestage compared to the two saltwater lifestages. This is another possible predictor variable and could be a good post-mortem metric to add to the model.
 
 ## Checking if Data are Normally Distributed
 
@@ -363,9 +366,9 @@ visreg(model4, "t_perc_dw", by = "lifestage")
 # creating new data of all combinations of lifestage, temp, and posttrial_wet_weight
 newdata <- expand.grid(lifestage = unique(alpha_values_combined$lifestage),
                        temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
-                                      max(alpha_values_combined$temp_avg,na.rm=T),length.out=100),
-                       t_perc_dw = mean(alpha_values_combined$t_perc_dw)
-                       )
+                                      max(alpha_values_combined$temp_avg,na.rm=T),
+                                      length.out=100),t_perc_dw = mean
+                                      (alpha_values_combined$t_perc_dw))
 ```
 
 ## Testing Model4 on the New Data
