@@ -30,14 +30,14 @@ alpha_int <- alpha_int %>%
 # use lubridate on datetime column
 alpha_int$datetime <- ymd_hms(alpha_int$datetime)
 
-# use dates of exp to determine if saltwater juvenile"SJ", freshwater juvenile"FJ" or subadult saltwater"SS"
+# use dates of exp to determine if saltwater smolt, freshwater smolt or subadult 
 sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
 fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
 alpha_int <- alpha_int %>%
   mutate(lifestage = case_when(
-    datetime < sj_cutoff ~ "SJ",
-    datetime < fj_cutoff ~ "FJ",  # anything >= SJ cutoff but < FJ cutoff
-    TRUE ~ "SS"                   # everything else
+    datetime < sj_cutoff ~ "saltwater smolt",
+    datetime < fj_cutoff ~ "freshwater smolt",  # anything >= saltwater cutoff but < freshwater juvenile cutoff
+    TRUE ~ "subadult"                   # everything else
   )) 
 # change lifestage column to a factor
 alpha_int$lifestage <- as.factor(alpha_int$lifestage)
@@ -224,7 +224,7 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
 
 
 #relevel lifestage so that SS is the first reference
-alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "SS", "SJ")
+alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "subadult", "saltwater smolt")
 
 model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
 model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg, alpha_values_combined)

@@ -37,13 +37,13 @@ alpha_int <- alpha_int %>%
 # use lubridate on datetime column
 alpha_int$datetime <- ymd_hms(alpha_int$datetime)
 
-# use dates of exp to determine if saltwater juvenile "SJ", freshwater juvenile "FJ" or subadult saltwater "SS"
+# use dates of exp to determine if saltwater smolt, freshwater smolt or subadult
 sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
 fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
 alpha_int <- alpha_int %>%
   mutate(lifestage = case_when(
     datetime < sj_cutoff ~ "saltwater smolt",
-    datetime < fj_cutoff ~ "freshwater smolt",  # anything >= SJ cutoff but < FJ cutoff
+    datetime < fj_cutoff ~ "freshwater smolt",  # anything >= saltwater smolt cutoff but < freshwater smolt cutoff
     TRUE ~ "subadult"                   # everything else
   )) 
 # change lifestage column to a factor

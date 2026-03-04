@@ -5,11 +5,11 @@ format: html
 
 ## Alpha Analysis
 
-Obj 3: What is the variation of alpha values across temperature and lifestage
+**Obj 3**: What is the variation of alpha values across temperature and lifestage
 
 We expect that alpha will increase with temperature and temparature will have a greater impact at the transitional saltwater lifestages (saltwater smolt and subadult).
 
-First we have to do some data tidying after we load in the data.
+-   First we have to do some data tidying after we load in the data.
 
 ```{r}
 #load in libraries
@@ -32,13 +32,13 @@ alpha_int <- alpha_int %>%
 # use lubridate on datetime column
 alpha_int$datetime <- ymd_hms(alpha_int$datetime)
 
-# use dates of exp to determine if saltwater juvenile"SJ", freshwater juvenile"FJ" or subadult saltwater"SS"
+# use dates of exp to determine if saltwater juvenile, freshwater juvenile or subadult
 sj_cutoff <- ymd_hms("2025-07-24 00:00:00", tz = "UTC")
 fj_cutoff <- ymd_hms("2025-08-03 00:00:00", tz = "UTC")
 alpha_int <- alpha_int %>%
   mutate(lifestage = case_when(
     datetime < sj_cutoff ~ "saltwater smolt",
-    datetime < fj_cutoff ~ "freshwater smolt",  # anything >= SJ cutoff but < FJ cutoff
+    datetime < fj_cutoff ~ "freshwater smolt",  # anything >= saltwater smolt cutoff but < freshwater cutoff
     TRUE ~ "subadult"                   # everything else
   )) 
 # change lifestage column to a factor
@@ -58,7 +58,7 @@ alpha_values<- alpha_int %>%
   ungroup()
 ```
 
-Here we read in the post mortem data and then combine it with our alpha values df.
+-   Here we read in the post mortem data and then combine it with our alpha values df.
 
 ```{r}
 post_mort <- read.csv("meta_postmort.csv")
@@ -140,9 +140,9 @@ For the scope of this project we will stick to temperature and lifestage.
 
 ## Checking if Data are Normally Distributed
 
-Shapiro test will tell us if the data is normally distributed. Null hypothesis that is that data is normally distributed. Would be confirmed by a p \< 0.05.
+-   Shapiro test will tell us if the data is normally distributed. Null hypothesis that is that data is normally distributed. Would be confirmed by a p \< 0.05.
 
-qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds.
+-   qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds.
 
 ```{r}
 #test for normalcy
@@ -155,7 +155,7 @@ The Shapiro test shows that we do not have normally distributed data, but the qq
 
 ## Modeling
 
-We will have four models combining lifestage and temperature across additive and interactive effects. Then we will compare them with both AIC and BIC to determine the best model.
+We will have four models combining lifestage and temperature across additive and interactive effects. Then we will compare them to each other with AIC and BIC to determine the best model.
 
 ```{r}
 lm1 <- lm(avg_alpha ~ lifestage, alpha_values)
@@ -164,23 +164,26 @@ lm3 <- lm(avg_alpha ~ lifestage + avg_temp, alpha_values)
 lm4 <- lm(avg_alpha ~ lifestage + avg_temp + lifestage:avg_temp, alpha_values)
 
 #AIC/BIC evaluation
-
 #df that shows AIC and BIC results
 evaluation <- data.frame(AIC(lm1, lm2, lm3, lm4)) %>%
   mutate(BIC = BIC(lm1, lm2, lm3, lm4)$BIC) %>%
   arrange(BIC)
 ```
 
-From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature.
+-   From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature.
 
-Now lets look at summary statistics about this model
+-   Now lets look at summary statistics about this model
 
 ```{r}
+# we can visualize to make sure that data looks evenly distributed
+# anova allows us to determine if the variables have a significant effect
 plot(lm4)
 Anova(lm4)
 ```
 
-We can see a good distribution across our four plots and the Anova shows that we have significance of our variables. Let's look at the summary to understand the significance.
+-   We can see a good distribution across our four plots and the Anova shows that we have significance of our variables.
+
+-   Let's look at the summary to understand the significance.
 
 ```{r}
 summary(lm4)
@@ -190,13 +193,13 @@ summary(lm4)
 
 **Temperature**: Alpha increases by 0.57 for every 1 degree Celsius increase. This supports our initial hypothesis from earlier.
 
-**Temperature conditional on Lifestage:** Finally, we will look at how the interactive effect of temperature and lifestage impacts alpha. From the model we see that for the saltwater smolts, alpha increases by 1.22 more than freshwater smolts for every 1 degree Celsius increase. For the subadults their alpha increases by 0.496 for every 1 degree Celsius increase. This supports our initial hypothesis too.
+**Temperature conditional on lifestage:** Finally, we will look at how the interactive effect of temperature and lifestage impacts alpha. From the model we see that for the saltwater smolts, alpha increases by 1.22 more than freshwater smolts for every 1 degree Celsius increase. For the subadults their alpha increases by 0.496 more than freshwater smolts for every 1 degree Celsius increase. This supports our initial hypothesis too.
 
-Interestingly, the saltwater smolt lifestage is impacted more by temperature than the subadult lifestage. This could be because the smolt lifestage is at a very stressful transitional period as it is acclimating to saltwater.
+Interestingly, the saltwater smolt lifestage is impacted more by temperature than the subadult lifestage. This could be because the smolt lifestage is a very stressful transitional period as it is acclimating to saltwater.
 
 ## Visualize the Model
 
-The best way to understand this model is to visualize it
+-   The best way to understand this model is to visualize it
 
 ```{r}
 #visualize the model
@@ -208,9 +211,11 @@ We can see that the slope of saltwater smolts is the steepest meaning that tempe
 
 ## Predicting Data
 
-We can look at predicted data to help us understand our model
+-   We can look at predicted data to help us understand our model
 
-First we create new data based based on the range of data we used to create our predicted model. Then we will use the model to predict using that data.
+-   First we create new data based based on the range of data we used to create our predicted model. Then we will use the model to predict using that data.
+
+-   Note that for these plots the line represents the predicted trend, and the points represent the actual data, this allows us to see how well our model aligns with the actual data.
 
 ```{r}
 # creating new data of all combinations of lifestage and temp
@@ -233,7 +238,8 @@ newdata %>%
   ggplot(aes(avg_temp, fit, fill=lifestage)) +
     geom_point(data = alpha_values, aes(avg_temp,avg_alpha ,col = lifestage)) +
     geom_line(aes(col = lifestage)) +
-    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.3)
+    geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.3) +
+    labs(y = "Alpha (mgO2kg-1h-1kPa-1)", x = "Temperature (°C)")
 
 # also make this same plot but facet wrapped so you can see the individual lifestages
 newdata %>%
@@ -241,16 +247,16 @@ newdata %>%
     geom_point(data = alpha_values, aes(avg_temp,avg_alpha ,col = lifestage)) +
     geom_line(aes(col = lifestage)) +
     geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.3) +
-    facet_wrap(~lifestage)
-
-
+    facet_wrap(~lifestage) +
+    labs(y = "Alpha (mgO2kg-1h-1kPa-1)", x = "Temperature (°C)") +
+    theme(legend.position = "none")
 ```
 
-## More visualization
+## Visualizing Variation
 
-Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages.
+-   Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages.
 
-Note that this is done with the predicted data, not the actual data
+-   Note that this is done with the predicted data, not the actual data
 
 ```{r}
 newdata %>% 
@@ -261,7 +267,7 @@ newdata %>%
       theme(plot.title = element_text(hjust = 0.5))
 ```
 
-This is what it would look like with the actual data
+-   This is what it would look like with the actual data
 
 ```{r}
 alpha_values %>% 
@@ -271,3 +277,5 @@ alpha_values %>%
       labs(title = "Alpha range", x = "Life stage", y = "alpha") +
       theme(plot.title = element_text(hjust = 0.5))
 ```
+
+We see that for the saltwater smolt lifestage, temperature has causes a greater variation in alpha ranges when compared to the freshwater smolt lifestage. This is present in the subadult lifestage as well, but not as strong of an effect. This illustrates the impact of temperature on the transitional lifestages as the enter the ocean.
