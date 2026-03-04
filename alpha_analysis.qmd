@@ -140,7 +140,7 @@ For the scope of this project we will stick to temperature and lifestage.
 
 ## Checking if Data are Normally Distributed
 
--   Shapiro test will tell us if the data is normally distributed. Null hypothesis that is that data is normally distributed. Would be confirmed by a p \< 0.05.
+-   Shapiro test will tell us if the data is normally distributed. Null hypothesis is that data is normally distributed. Would be confirmed by a p \< 0.05.
 
 -   qqPlot will visualize if the data falls within a normal distribution. We want data points within the blue bounds.
 
