@@ -10,12 +10,14 @@ editor: visual
 #install.packages(respirometry)
 #install.packages(car)
 #install.packages(visreg)
+#install.packages(brms)
 
 library(tidyverse)
 library(respirometry)
 library(stats)
 library(car)
 library(lubridate)
+library(brms)
 ```
 
 # Data Tidying
@@ -195,6 +197,8 @@ print(ttest)
 
 -   Now that we know we have different data between the intermittent and closed experiments we can look at possible causes for that difference
 
+-   The following section is purely exploratory and does not add much content, but it is interesting to do
+
 ## Plotting
 
 -   Here we are creating exploratory plots to determine patterns and relationships and select explanatory outputs
@@ -309,43 +313,82 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
 alpha_values_combined$lifestage <- fct_relevel(alpha_values_combined$lifestage, "subadult", "saltwater smolt")
 
 #run models with different amounts of predictors and interactive/additive effects to determine which is best fit/most explanatory
-model1 <- lm(alpha_diff_avg ~ lifestage, alpha_values_combined)
-model2 <- lm(alpha_diff_avg ~ lifestage + temp_avg + lifestage:temp_avg,
-             alpha_values_combined)
-model3 <- lm(alpha_diff_avg ~ lifestage + temp_avg + t_perc_dw +
-             lifestage:t_perc_dw + lifestage:temp_avg, alpha_values_combined)
-model4 <- lm(alpha_diff_avg ~ lifestage + temp_avg + t_perc_dw + lifestage:temp_avg, alpha_values_combined)
+
+m.model1 <- 
+  brm(data = alpha_values_combined, # Give the model the alpha data
+      # Choose a normal distribution
+      family = gaussian(),
+      # Specify the model here. 
+      alpha_diff_avg ~ 1 + lifestage,
+      # Here's where you specify parameters for executing the Markov chains
+      # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      # Save the fitted model object as output - helpful for reloading in the output later
+      file = "output/model1")
+
+#replicating for the rest of the models
+
+m.model2 <- 
+  brm(data = alpha_values_combined,
+      family = gaussian(),
+      alpha_diff_avg ~ 1 + lifestage + temp_avg + lifestage:temp_avg,
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      file = "output/model2")
+
+m.model3 <- 
+  brm(data = alpha_values_combined,
+      family = gaussian(),
+      alpha_diff_avg ~ 1 + lifestage + temp_avg + t_perc_dw +
+        lifestage:t_perc_dw + lifestage:temp_avg,
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      file = "output/model3")
+
+m.model4 <- 
+  brm(data = alpha_values_combined,
+      family = gaussian(),
+      alpha_diff_avg ~ 1 + lifestage + temp_avg + t_perc_dw + lifestage:temp_avg,
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      file = "output/model4")
 ```
 
-## AIC/BIC Evaluation and Summary Statistics
-
--   Computing the ACI and BIC to evaluate model complexity and fit
-
--   The ACI provides an estimate of prediction error, while the BIC also is based on the likelihood function but has a stronger penalty for model complexity
-
--   Anova function will tell us if the variables used are significant
+Plot to make sure the model ran correctly, check rhat and markov chains
 
 ```{r}
-#df that shows AIC and BIC results
-evaluation <- data.frame(AIC(model1, model2, model3, model4)) %>%
-  mutate(BIC = BIC(model1, model2, model3, model4)$BIC) %>%
-  arrange(BIC)
-
-
-plot(model4)
-Anova(model4)
-summary(model4)
+plot(m.model1)
+plot(m.model2)
+plot(m.model3)
+plot(m.model4)
 ```
 
--   AIC and BIC results indicate that we should use model4
+## Loo Evaluation and Summary Statistics
 
--   From the summary we can see that life stage has a larger impact on the intercept of freshwater smolts compared to the subadults, than on the saltwater smolts
+```{r}
+#using loo and loo compare to determine the best fit model
+loo1 <- loo(m.model1)
+loo2 <- loo(m.model2)
+loo3 <- loo(m.model3)
+loo4 <- loo(m.model4)
+loo_compare(loo1, loo2, loo3, loo4)
 
--   The alpha difference increases by 0.61 for every degree of Celsius increase
+```
 
--   alpha difference also increases by 75 .47 for every tissue % dry weight percent increase
+-   From the loo compare it shows that model 2 is the best fit model
 
--   The interactive effects of lifestage and temp are only weakly correlated though
+-   Now we can observe the summary statistics of model 2
+
+```{r}
+summary(m.model2)
+```
+
+-   Loo results show that we should use model2 which has temp and lifestage.
+
+-   The alpha difference increases by 0.22 for every degree of Celsius increase
+
+-   alpha difference is also explained by the saltwater smolt lifestage and temperature where there is a 0.33 increase in alpha diff for every degree of Celsius increase
 
 ## Visualizing the Model
 
@@ -354,8 +397,19 @@ summary(model4)
 ```{r}
 #visualize the model
 library(visreg)
-visreg(model4, "temp_avg", by = "lifestage")
-visreg(model4, "t_perc_dw", by = "lifestage")
+visreg(m.model2, "temp_avg", by = "lifestage")
+```
+
+```{r}
+predicted <- predict_response(m.model2,
+                          terms = c("temp_avg", "lifestage"))
+
+plot(predicted, show_data = TRUE)
+
+preds.int.blength <- predict_response(m.blength.bdepth.spp.interactive,
+                          terms = c("bill_depth_mm", "species"))
+
+plot(preds.int.blength, show_data = TRUE)
 ```
 
 ## New Data Frame with all Combinations of Lifestage, Temp, and tissue % dry weight
@@ -383,6 +437,13 @@ newdata$lcl <- prdata$fit - prdata$se.fit*2 #lower cl, -fit x2
 newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
 
 #plot of this fit with the ucl and lcl
+newdata %>% 
+  ggplot(aes(temp_avg, fit, colour = lifestage)) +
+    geom_point()+
+    geom_line(aes(col=lifestage)) +
+    geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
+
+# this is the plot of the fit that includes the original data as a comparison
 newdata %>%
   ggplot(aes(temp_avg,fit,fill=lifestage)) +
     geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,
@@ -391,9 +452,7 @@ newdata %>%
     geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
 
 
-newdata %>% 
-  ggplot(aes(temp_avg, fit, colour = lifestage)) +
-    geom_point()
+
 ```
 
 # Explanatory Data Analysis
@@ -548,6 +607,40 @@ The Shapiro test shows that we do not have normally distributed data, but the qq
 ## Modeling
 
 We will have four models combining lifestage and temperature across additive and interactive effects. Then we will compare them to each other with AIC and BIC to determine the best model.
+
+```{r}
+m.lm1 <- 
+  brm(data = alpha_values,
+      family = gaussian(),
+      avg_alpha ~ 1 + lifestage,
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      file = "output/m.lm1")
+
+m.lm2 <- 
+  brm(data = alpha_values,
+      family = gaussian(),
+      avg_alpha ~ 1 + avg_temp,
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      file = "output/m.lm2")
+
+m.lm3 <- 
+  brm(data = alpha_values,
+      family = gaussian(),
+      avg_alpha ~ 1 + lifestage + avg_temp,
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      file = "output/m.lm3")
+
+m.lm4 <- 
+  brm(data = alpha_values,
+      family = gaussian(),
+      avg_alpha ~ 1 + lifestage + avg_temp + lifestage:avg_temp,
+      iter = 6000, warmup = 4000, chains = 4, cores = 4,
+      prior = prior(normal(0, 0.1), class = b),
+      file = "output/m.lm4")
+```
 
 ```{r}
 lm1 <- lm(avg_alpha ~ lifestage, alpha_values)
