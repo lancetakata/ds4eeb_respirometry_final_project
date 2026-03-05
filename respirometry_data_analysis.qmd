@@ -7,17 +7,17 @@ editor: visual
 # Install and Load Packages
 
 ```{r}
-#install.packages(respirometry)
 #install.packages(car)
 #install.packages(visreg)
 #install.packages(brms)
+#install.packages(ggeffects)
 
 library(tidyverse)
-library(respirometry)
 library(stats)
 library(car)
 library(lubridate)
 library(brms)
+library(ggeffects)
 ```
 
 # Data Tidying
@@ -302,11 +302,9 @@ pairs(temp,lower.panel = panel.smooth, upper.panel = panel.cor,
 
 -   It looks like we are okay to use lifestage, temp, and t_perc_dw
 
-## Releveling Lifestage so that Saltwater Subadult is the first reference
+## Modeling
 
--   Here we are releveling the subadult lifestage to be the first reference
-
--   This does not change the model but changes how we read the output, comparing each stage to the subadults first
+-   Here we are releveling the subadult lifestage to be the first reference. This does not change the model but changes how we read the output, comparing each stage to the subadults first
 
 ```{r}
 #relevel lifestage so that subadult is the first reference
@@ -323,7 +321,7 @@ m.model1 <-
       # Here's where you specify parameters for executing the Markov chains
       # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 0.5), class = b),
       # Save the fitted model object as output - helpful for reloading in the output later
       file = "output/model1")
 
@@ -334,7 +332,7 @@ m.model2 <-
       family = gaussian(),
       alpha_diff_avg ~ 1 + lifestage + temp_avg + lifestage:temp_avg,
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 0.5), class = b),
       file = "output/model2")
 
 m.model3 <- 
@@ -343,7 +341,7 @@ m.model3 <-
       alpha_diff_avg ~ 1 + lifestage + temp_avg + t_perc_dw +
         lifestage:t_perc_dw + lifestage:temp_avg,
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 0.5), class = b),
       file = "output/model3")
 
 m.model4 <- 
@@ -351,11 +349,11 @@ m.model4 <-
       family = gaussian(),
       alpha_diff_avg ~ 1 + lifestage + temp_avg + t_perc_dw + lifestage:temp_avg,
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 0.5), class = b),
       file = "output/model4")
 ```
 
-Plot to make sure the model ran correctly, check rhat and markov chains
+-   Plot to make sure the model ran correctly, check markov chains
 
 ```{r}
 plot(m.model1)
@@ -366,6 +364,10 @@ plot(m.model4)
 
 ## Loo Evaluation and Summary Statistics
 
+-   the loo will tell us all we need to know....
+
+-   Here we will compare looic values, lowest one is best
+
 ```{r}
 #using loo and loo compare to determine the best fit model
 loo1 <- loo(m.model1)
@@ -374,85 +376,37 @@ loo3 <- loo(m.model3)
 loo4 <- loo(m.model4)
 loo_compare(loo1, loo2, loo3, loo4)
 
+comp <- loo_compare(loo1, loo2, loo3, loo4)
+comp_df <- as.data.frame(comp)
+comp_df$model <- rownames(comp_df)
 ```
 
--   From the loo compare it shows that model 2 is the best fit model
+-   From the loo compare it shows that model 3 is the best fit model, but model 4 is quite similar in looic value
 
--   Now we can observe the summary statistics of model 2
+<!-- -->
+
+-   Now we can observe the summary statistics of model 3
 
 ```{r}
-summary(m.model2)
+summary(m.model3)
 ```
 
--   Loo results show that we should use model2 which has temp and lifestage.
+-   Loo results show that we should use model3 which has temp, lifestage, and tissue % dry weight plus an interactive effect of all three of those variables
 
--   The alpha difference increases by 0.22 for every degree of Celsius increase
+-   The alpha difference increases by 0.40 for every degree of Celsius increase
 
--   alpha difference is also explained by the saltwater smolt lifestage and temperature where there is a 0.33 increase in alpha diff for every degree of Celsius increase
+-   alpha difference is also explained by the saltwater smolt lifestage and temperature where there is a 0.42 increase in alpha diff for every degree of Celsius increase compared to the subadults
+
+-   alpha differnce increases by 0.23 for every degree of Celsius increase for freshwater smolts compared to the subadults
 
 ## Visualizing the Model
 
 -   This is a visualization of the model, as separated by life stage
 
 ```{r}
-#visualize the model
-library(visreg)
-visreg(m.model2, "temp_avg", by = "lifestage")
-```
-
-```{r}
-predicted <- predict_response(m.model2,
-                          terms = c("temp_avg", "lifestage"))
+predicted <- predict_response(m.model2, terms = c("temp_avg", "lifestage"))
 
 plot(predicted, show_data = TRUE)
-
-preds.int.blength <- predict_response(m.blength.bdepth.spp.interactive,
-                          terms = c("bill_depth_mm", "species"))
-
-plot(preds.int.blength, show_data = TRUE)
-```
-
-## New Data Frame with all Combinations of Lifestage, Temp, and tissue % dry weight
-
--   Here we are creating a new data frame with all combinations of lifestage, temp, and tissue % dry weight to test model3 predictions
-
-```{r}
-# creating new data of all combinations of lifestage, temp, and posttrial_wet_weight
-newdata <- expand.grid(lifestage = unique(alpha_values_combined$lifestage),
-                       temp_avg = seq(min(alpha_values_combined$temp_avg,na.rm=T),
-                                      max(alpha_values_combined$temp_avg,na.rm=T),
-                                      length.out=100),t_perc_dw = mean
-                                      (alpha_values_combined$t_perc_dw))
-```
-
-## Testing Model4 on the New Data
-
-```{r}
-# how does model4 predict this new data
-prdata <- predict(model4,newdata = newdata, se.fit = T)
-
-#creating plot of the new data fit
-newdata$fit <- prdata$fit
-newdata$lcl <- prdata$fit - prdata$se.fit*2 #lower cl, -fit x2
-newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
-
-#plot of this fit with the ucl and lcl
-newdata %>% 
-  ggplot(aes(temp_avg, fit, colour = lifestage)) +
-    geom_point()+
-    geom_line(aes(col=lifestage)) +
-    geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
-
-# this is the plot of the fit that includes the original data as a comparison
-newdata %>%
-  ggplot(aes(temp_avg,fit,fill=lifestage)) +
-    geom_point(data=alpha_values_combined,aes(temp_avg,alpha_diff_avg,
-               col=lifestage)) +
-    geom_line(aes(col=lifestage)) +
-    geom_ribbon(aes(ymin = lcl,ymax = ucl),alpha = 0.3)
-
-
-
 ```
 
 # Explanatory Data Analysis
@@ -470,7 +424,6 @@ We expect that alpha will increase with temperature and temparature will have a 
 alpha_int <- read.csv("alpha_int.csv")
 
 #### the following code is data tidying and may be duplicative ####
-
 
 
 #add column "Salinity" identifying if a fish was saltwater or freshwater
@@ -517,8 +470,8 @@ post_mort <- read.csv("meta_postmort.csv")
 # add relevant columns to the combined df
 alpha_values <- alpha_values %>% 
   left_join(post_mort %>% 
-              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, posttrial_wet_weight_g),
-            by = "fish_id")
+              select(fish_id, cf, hsi, l_perc_dw, t_perc_dw, 
+                     posttrial_wet_weight_g), by = "fish_id")
 ```
 
 ## Plotting
@@ -614,7 +567,7 @@ m.lm1 <-
       family = gaussian(),
       avg_alpha ~ 1 + lifestage,
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 1), class = b),
       file = "output/m.lm1")
 
 m.lm2 <- 
@@ -622,7 +575,7 @@ m.lm2 <-
       family = gaussian(),
       avg_alpha ~ 1 + avg_temp,
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 1), class = b),
       file = "output/m.lm2")
 
 m.lm3 <- 
@@ -630,7 +583,7 @@ m.lm3 <-
       family = gaussian(),
       avg_alpha ~ 1 + lifestage + avg_temp,
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 1), class = b),
       file = "output/m.lm3")
 
 m.lm4 <- 
@@ -638,9 +591,69 @@ m.lm4 <-
       family = gaussian(),
       avg_alpha ~ 1 + lifestage + avg_temp + lifestage:avg_temp,
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.1), class = b),
+      prior = prior(normal(0, 1), class = b),
       file = "output/m.lm4")
 ```
+
+-   Now that we have our models, lets plot them to check that they ran correctly
+
+```{r}
+plot(m.lm1)
+plot(m.lm2)
+plot(m.lm3)
+plot(m.lm4)
+```
+
+-   Chains and distributions look good
+
+-   Using the loo
+
+```{r}
+loolm1 <- loo(m.lm1)
+loolm2 <- loo(m.lm2)
+loolm3 <- loo(m.lm3)
+loolm4 <- loo(m.lm4)
+loo_compare(loolm1,loolm2,loolm3,loolm4)
+
+comp2 <- loo_compare(loolm1,loolm2,loolm3,loolm4)
+comp_df2 <- as.data.frame(comp2)
+comp_df2$model <- rownames(comp_df2)
+```
+
+-   From loo compare we see that m.lm4 is the best fit
+
+-   Now lets look at summary statistics about this model
+
+```{r}
+summary(m.lm4)
+```
+
+**Intercept**: The freshwater smolt fish have significantly higher intercepts of alpha compared to the saltwater smolt and subadult lifestages.
+
+**Temperature**: Alpha increases by 1.14 for every 1 degree Celsius increase. This supports our initial hypothesis from earlier.
+
+**Temperature conditional on lifestage:** Finally, we will look at how the interactive effect of temperature and lifestage impacts alpha. From the model we see that the temperature impacts alpha by 0.46 for every 1 degree Celsius increase for the saltwater smolt lifestage. However, the subadult interaction is not significantly different than zero.
+
+Interestingly, the saltwater smolt lifestage is impacted more by temperature than the subadult lifestage. This could be because the smolt lifestage is a very stressful transitional period as it is acclimating to saltwater.
+
+## Visualize the Model
+
+## Predicting Data
+
+-   We can look at predicted data to help us understand our model
+
+```{r}
+predicted2 <- predict_response(m.lm4, terms = c("avg_temp", "lifestage"))
+plot(predicted2, show_data = TRUE)
+```
+
+Here we can see that our saltwater smolts do have a different response to temperature than the freshwater smolts and subadult lifestages.
+
+# Non-bayesian Modeling
+
+Since I've already done it, here is another way of modeling using frequentist methods.
+
+We will use the same four models as before, combining lifestage and temperature across additive and interactive effects. Then we will compare them to each other with AIC and BIC to determine the best model.
 
 ```{r}
 lm1 <- lm(avg_alpha ~ lifestage, alpha_values)
@@ -655,7 +668,7 @@ evaluation <- data.frame(AIC(lm1, lm2, lm3, lm4)) %>%
   arrange(BIC)
 ```
 
--   From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature
+-   From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature.
 
 -   Now lets look at summary statistics about this model
 
@@ -666,9 +679,9 @@ plot(lm4)
 Anova(lm4)
 ```
 
--   We can see a good distribution across our four plots and the Anova shows that we have significance of our variables
+-   We can see a good distribution across our four plots and the Anova shows that we have significance of our variables.
 
--   Let's look at the summary to understand the significance
+-   Let's look at the summary to understand the significance.
 
 ```{r}
 summary(lm4)
@@ -698,9 +711,9 @@ We can see that the slope of saltwater smolts is the steepest meaning that tempe
 
 -   We can look at predicted data to help us understand our model
 
--   First we create new data based based on the range of data we used to create our predicted model, then we will use the model to predict using that data
+-   First we create new data based based on the range of data we used to create our predicted model. Then we will use the model to predict using that data.
 
--   Note that for these plots the line represents the predicted trend, and the points represent the actual data, this allows us to see how well our model aligns with the actual data
+-   Note that for these plots the line represents the predicted trend, and the points represent the actual data, this allows us to see how well our model aligns with the actual data.
 
 ```{r}
 # creating new data of all combinations of lifestage and temp
@@ -739,7 +752,7 @@ newdata %>%
 
 ## Visualizing Variation
 
--   Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages
+-   Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages.
 
 -   Note that this is done with the predicted data, not the actual data
 
