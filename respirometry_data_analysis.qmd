@@ -644,10 +644,24 @@ Interestingly, the saltwater smolt lifestage is impacted more by temperature tha
 
 ```{r}
 predicted2 <- predict_response(m.lm4, terms = c("avg_temp", "lifestage"))
-plot(predicted2, show_data = TRUE)
+
+#manually set color scheme to match a future plot
+plot(predicted2, show_data = TRUE) +
+  scale_color_manual(values = c(
+    "freshwater smolt" = "lightcoral",
+    "subadult" = "cadetblue3",
+    "saltwater smolt" = "green3")) +
+  scale_fill_manual(values = c(
+    "freshwater smolt" = "red",
+    "subadult" = "blue",
+    "saltwater smolt" = "green"))
+
+
+#extra code to save file plot
+#ggsave(filename = "predicted plot.png", plot = plot)
 ```
 
-Here we can see that our saltwater smolts do have a different response to temperature than the freshwater smolts and subadult lifestages.
+Here we can see that our saltwater smolts do have a different response to temperature than the freshwater smolts and subadult lifestages. It is important to note that using this model, there is little difference between subadult and freshwater smolt lifestage. This will be important consider in the next section.
 
 # Non-bayesian Modeling
 
@@ -733,11 +747,14 @@ newdata$ucl <- prdata$fit + prdata$se.fit*2 #upper cl, +fit x2
 
 #plot of this fit with the ucl and lcl
 newdata %>%
-  ggplot(aes(avg_temp, fit, fill=lifestage)) +
+    ggplot(aes(avg_temp, fit, fill =lifestage)) +
     geom_point(data = alpha_values, aes(avg_temp,avg_alpha ,col = lifestage)) +
     geom_line(aes(col = lifestage)) +
     geom_ribbon(aes(ymin = lcl, ymax = ucl), alpha = 0.3) +
     labs(y = "Alpha (mgO2kg-1h-1kPa-1)", x = "Temperature (°C)")
+
+#extra code to export plot
+#ggsave(filename = "frequentist_plot.png", plot = frequentist_plot)
 
 # also make this same plot but facet wrapped so you can see the individual lifestages
 newdata %>%
@@ -748,6 +765,8 @@ newdata %>%
     facet_wrap(~lifestage) +
     labs(y = "Alpha (mgO2kg-1h-1kPa-1)", x = "Temperature (°C)") +
     theme(legend.position = "none")
+
+
 ```
 
 ## Visualizing Variation
