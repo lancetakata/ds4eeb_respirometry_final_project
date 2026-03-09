@@ -193,7 +193,7 @@ print(ttest)
 # therefore we will use the alpha values from the intermittent experiment
 ```
 
--   The result is that the intermittent data is significantly different by 2.23 units. This mean we should
+-   The result is that the intermittent data is significantly different by 2.23 units. This mean we should use the intermittent data since they have higher alpha values.
 
 -   Now that we know we have different data between the intermittent and closed experiments we can look at possible causes for that difference
 
@@ -321,7 +321,7 @@ m.model1 <-
       # Here's where you specify parameters for executing the Markov chains
       # We're using similar to the defaults, except we set cores to 4 so the analysis runs faster than the default of 1
       iter = 6000, warmup = 4000, chains = 4, cores = 4,
-      prior = prior(normal(0, 0.5), class = b),
+      prior = prior(normal(0, 0.5), class = b), 
       # Save the fitted model object as output - helpful for reloading in the output later
       file = "output/model1")
 
@@ -382,9 +382,6 @@ comp_df$model <- rownames(comp_df)
 ```
 
 -   From the loo compare it shows that model 3 is the best fit model, but model 4 is quite similar in looic value
-
-<!-- -->
-
 -   Now we can observe the summary statistics of model 3
 
 ```{r}
@@ -415,7 +412,7 @@ plot(predicted, show_data = TRUE)
 
 What is the variation of alpha values across temperature and lifestage?
 
-We expect that alpha will increase with temperature and temparature will have a greater impact at the transitional saltwater lifestages (saltwater smolt and subadult).
+We expect that alpha will increase with temperature and temperature will have a greater impact at the transitional saltwater lifestages (saltwater smolt and subadult).
 
 -   First we have to do some data tidying after we load in the data since we will be only using the intermittent alpha data
 
@@ -628,7 +625,7 @@ comp_df2$model <- rownames(comp_df2)
 summary(m.lm4)
 ```
 
-**Intercept**: The freshwater smolt fish have significantly higher intercepts of alpha compared to the saltwater smolt and subadult lifestages.
+**Intercept**: The intercepts of alpha compared for the saltwater smolt and subadult lifestages are not significantly different then zero when compared to the freshwater smolt lifestage.
 
 **Temperature**: Alpha increases by 1.14 for every 1 degree Celsius increase. This supports our initial hypothesis from earlier.
 
@@ -703,11 +700,11 @@ summary(lm4)
 
 **Intercept**: Both the saltwater smolts and subadult fish have significantly lower intercepts of alpha compared to freshwater smolts.
 
-**Temperature**: Alpha increases by 0.57 for every 1 degree Celsius increase. This supports our initial hypothesis from earlier.
+**Temperature**: Alpha increases by 0.57 for every 1 degree Celsius increase. This supports our initial hypothesis from earlier, but is a slightly different value from the bayesian model
 
-**Temperature conditional on lifestage:** Finally, we will look at how the interactive effect of temperature and lifestage impacts alpha. From the model we see that for the saltwater smolts, alpha increases by 1.22 more than freshwater smolts for every 1 degree Celsius increase. For the subadults their alpha increases by 0.496 more than freshwater smolts for every 1 degree Celsius increase. This supports our initial hypothesis too.
+**Temperature conditional on lifestage:** Finally, we will look at how the interactive effect of temperature and lifestage impacts alpha. From the model we see that for the saltwater smolts, alpha increases by 1.22 more than freshwater smolts for every 1 degree Celsius increase. For the subadults their alpha increases by 0.496 more than freshwater smolts for every 1 degree Celsius increase. This supports our initial hypothesis and is different than the results from the bayesian modeling.
 
-Interestingly, the saltwater smolt lifestage is impacted more by temperature than the subadult lifestage. This could be because the smolt lifestage is a very stressful transitional period as it is acclimating to saltwater.
+Interestingly, the subadult lifestage has an interactive effect with temperature on alpha. This contrasts with the bayesian modeling. Perhaps the priors need to be adjusted in the bayesian modeling.
 
 ## Visualize the Model
 
@@ -769,6 +766,8 @@ newdata %>%
 
 ```
 
+-   This is a similar plot to the end of the bayesian modeling section. However, the slopes and intercepts of the lifestages are slightly different. Here the subadult has a different slope than the freshwater smolts.
+
 ## Visualizing Variation
 
 -   Lets create a plot that helps visualize the range of alpha across temperatures between the different lifestages.
@@ -795,4 +794,4 @@ alpha_values %>%
       theme(plot.title = element_text(hjust = 0.5))
 ```
 
-We see that for the saltwater smolt lifestage, temperature has causes a greater variation in alpha ranges when compared to the freshwater smolt lifestage. This is present in the subadult lifestage as well, but not as strong of an effect. This illustrates the impact of temperature on the transitional lifestages as the enter the ocean.
+We see that for the saltwater smolt lifestage, temperature causes a greater variation in alpha ranges when compared to the freshwater smolt lifestage. This is present in the subadult lifestage as well, but not as strong of an effect. This illustrates the impact of temperature on the transitional lifestage as they enter the ocean.
