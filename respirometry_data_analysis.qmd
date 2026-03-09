@@ -679,7 +679,9 @@ evaluation <- data.frame(AIC(lm1, lm2, lm3, lm4)) %>%
   arrange(BIC)
 ```
 
--   From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature.
+-   From the AIC and BIC results we can see that lm4 is the best fit model. This contains lifestage, temperature and the interactive effect of lifestage and temperature
+
+-   This is the same model that was selected using bayesian modeling
 
 -   Now lets look at summary statistics about this model
 
