@@ -34,4 +34,4 @@ Maximum oxygen supply capacity recorded during closed respirometry (alphaclose) 
 
 **Respirometry data analysis**: *respirometry_data_analysis.qmd*
 
-File containing the data analysis of respirometry data. It contains a workflow to determine which alpha values to use from the intermittent and closed data sets. It also contains a workflow to better understand the variation in alpha values seen using both bayesian and frequentist models.
+File containing the data analysis of respirometry data. It contains a workflow to determine which alpha values to use from the intermittent and closed data sets. It also contains a workflow to better understand the variation in alpha values seen using both bayesian and frequentist linear regression models.
