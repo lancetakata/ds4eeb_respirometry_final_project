@@ -558,6 +558,8 @@ The Shapiro test shows that we do not have normally distributed data, but the qq
 
 We will have four models combining lifestage and temperature across additive and interactive effects. Then we will compare them to each other with AIC and BIC to determine the best model.
 
+-   Priors were chosen based on previous non-bayesian modeling outcomes.
+
 ```{r}
 m.lm1 <- 
   brm(data = alpha_values,
@@ -617,7 +619,7 @@ comp_df2 <- as.data.frame(comp2)
 comp_df2$model <- rownames(comp_df2)
 ```
 
--   From loo compare we see that m.lm4 is the best fit
+-   From loo compare we see that m.lm4 is the best fit which is expected considering there should be an interactive effect with temperature and lifestage
 
 -   Now lets look at summary statistics about this model
 
@@ -658,7 +660,11 @@ plot(predicted2, show_data = TRUE) +
 #ggsave(filename = "predicted plot.png", plot = plot)
 ```
 
-Here we can see that our saltwater smolts do have a different response to temperature than the freshwater smolts and subadult lifestages. It is important to note that using this model, there is little difference between subadult and freshwater smolt lifestage. This will be important consider in the next section.
+## Model Interpretation
+
+Here we can see that our saltwater smolts do have a different response to temperature than the freshwater smolts and subadult lifestages. It is important to note that using this model, there is little difference between subadult and freshwater smolt lifestage. This will be important to consider in the next section.
+
+In an ecological sense, the saltwater smolts are more at risk to climate change and changing ocean conditions than the freshwater smolt and subadult lifestages. The saltwater smolt lifestage is a highly stressful transitional period in the salmonid life history so any increased stress could be detrimental to survival either through increased risk of predation or decreased growth.
 
 # Non-bayesian Modeling
 
@@ -768,7 +774,7 @@ newdata %>%
 
 ```
 
--   This is a similar plot to the end of the bayesian modeling section. However, the slopes and intercepts of the lifestages are slightly different. Here the subadult has a different slope than the freshwater smolts.
+-   This is a similar plot to the end of the bayesian modeling section. However, the slopes and intercepts of the lifestages are slightly different. Here the subadult has a different slope than the freshwater smolts. This means that the subadult lifestage is also significantly impacted by temperature but not as much as the freshwater smolt. The period of highest growth rate in salmonids is during the first year in the ocean. Any reduction in growth due to increased environmental stress during that period could lead to reduced survival and fitness either immediately or later in life.
 
 ## Visualizing Variation
 
